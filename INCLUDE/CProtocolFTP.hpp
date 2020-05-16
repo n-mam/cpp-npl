@@ -36,13 +36,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual void Download(const std::string& fRemote, const std::string& fLocal)
+    virtual void Download(TResponseCbk cbk, const std::string& fRemote, const std::string& fLocal = "")
     {
       std::lock_guard<std::recursive_mutex> lg(iLock);
 
       iJobQ.emplace_back("PASV", "", "", nullptr);
 
-      iJobQ.emplace_back("RETR", fRemote, fLocal, nullptr);
+      iJobQ.emplace_back("RETR", fRemote, fLocal, cbk);
 
       ProcessNextJob();
     }
@@ -414,7 +414,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       }
       else
       {
-
+        std::cout << std::string((char *)b, n);
       }
     }
 
@@ -433,7 +433,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         iDirectoryList = "";
       }
 
-      ProcessDataCmdEvent(); //3
+      ProcessDataCmdEvent();
     }
 };
 
