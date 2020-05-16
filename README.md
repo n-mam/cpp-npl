@@ -1,15 +1,26 @@
-# cpp-np-lib
+### cpp-np-lib
 
 C++17 network protocol library
 
 - Cross platform
 - Header only
 - Supported protocols
-    * FTP
+  * FTP
 	* FTPS
 	* SSH
 	* Websockets
 
+### cmake build
+
+From project root:
+```sh
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+FTP example
 ```cpp
 #include <iostream>
 #include <npl.hpp>
@@ -34,7 +45,7 @@ int main(void)
     std::cout << resp << "\n";
   });
 
-  Sleep(10000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(15000));
 
   return 0;
 }
