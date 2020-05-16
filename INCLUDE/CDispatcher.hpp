@@ -142,7 +142,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           if (!fRet)
           {
             std::cout << "GetQueuedCompletionStatus failed : " << GetLastError() << "\n";
-            continue;
           }
 
           if (n == 0 && k == 0 && o == 0)
@@ -156,41 +155,44 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         ctx->n = n;
 
-        std::lock_guard<std::recursive_mutex> lg(iLock);
+        std::unique_lock<std::mutex> ul(iLock);
 
-        for (auto& observer : iObservers)
+        for (auto& o : iObservers)
         {
-          if ((void *)observer.get() == (void *)k)
+          if ((void *)o.get() == (void *)k)
           {
+            ul.unlock();
+
             if (ctx->type == EIOTYPE::READ)
             {
               if (ctx->n != 0)
               {
-                observer->OnRead(ctx->b, ctx->n);
-                free(ctx->b);
+                o->OnRead(ctx->b, ctx->n);
+                free((void *)ctx->b);
               }
               else
               {
-                observer->OnDisconnect();
+                o->OnDisconnect();
               }
             }
             else if (ctx->type == EIOTYPE::WRITE)
             {
-              observer->OnWrite(ctx->b, ctx->n);
+              o->OnWrite(ctx->b, ctx->n);
             }
             else if (ctx->type == EIOTYPE::INIT)
             {
-              observer->OnConnect();
+              o->OnConnect();
             }
             else
             {
               assert (false);
             }
 
+            ul.lock();
+
             break;
           }
         }
-
         free(ctx);
       }
       std::cout << "Dispatcher thread returning\n";

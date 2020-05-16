@@ -2,6 +2,7 @@
 #define COMPONENT_HPP
 
 #include <mutex>
+#include <atomic>
 #include <vector>
 #include <memory>
 #include <utility>
@@ -20,13 +21,13 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
     virtual ~CSubject()
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       RemoveAllEventListeners();
     }
 
     virtual void SetTarget(const WPCSubject& target)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       iTarget = target;
     }
 
@@ -35,9 +36,9 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       return iTarget;
     }
 
-    virtual void Read(uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    virtual void Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       auto target = iTarget.lock();
 
@@ -47,9 +48,9 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       }
     }
 
-    virtual void Write(uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       auto target = iTarget.lock();
 
@@ -61,33 +62,33 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
     virtual void OnConnect(void)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       iConnected = true;
       NotifyConnect();
     }
 
     virtual void OnRead(const T1 *b, size_t n)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       NotifyRead((const T2 *)b, n);
     }
 
     virtual void OnWrite(const T1 *b, size_t n)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       NotifyWrite(b, n);
     }
 
     virtual void OnDisconnect(void)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       iConnected = false;
       NotifyDisconnect();
     }
 
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       iObservers.push_back(observer);
       observer->SetTarget(this->weak_from_this());
       return observer;
@@ -95,14 +96,43 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
     virtual void RemoveEventListener(const SPCSubject& observer)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       RemoveEventListenerInternal(observer);
     }
 
     virtual void RemoveAllEventListeners(void)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
       RemoveAllEventListenersInternal();
+    }
+
+    virtual void MarkRemoveAllListeners(void)
+    {
+      iMarkRemoveAllListeners = true;
+    }
+
+    virtual void MarkRemoveSelfAsListener(void)
+    {
+      iMarkRemoveSelfAsListener = true;
+    }
+
+    virtual bool ProcessMarkRemoveAllListeners(void)
+    {
+      std::lock_guard<std::mutex> lg(iLock);
+      if (iMarkRemoveAllListeners)
+      {
+        RemoveAllEventListenersInternal();        
+      }
+    }
+
+    virtual void UpdateListenerRoles(const SPCSubject& o)
+    {
+      o->ProcessMarkRemoveAllListeners();
+
+      if (o->IsMarkRemoveSelfAsListener())
+      {
+        this->RemoveEventListener(o);
+      }
     }
 
     virtual bool IsConnected(void)
@@ -143,13 +173,17 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
   protected:
 
+    std::mutex iLock;
+
     WPCSubject iTarget;
 
     bool iConnected = false;
 
-    std::recursive_mutex iLock;
-
     std::vector<SPCSubject> iObservers;
+
+    bool iMarkRemoveAllListeners = false;
+
+    bool iMarkRemoveSelfAsListener = false;
 
     virtual void RemoveAllEventListenersInternal()
     {
@@ -157,6 +191,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       {
         RemoveEventListenerInternal(observer);
       }
+      iMarkRemoveAllListeners = false;      
     }
 
     virtual void RemoveEventListenerInternal(const SPCSubject& consumer)

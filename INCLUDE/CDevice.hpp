@@ -24,7 +24,7 @@ struct Context
     OVERLAPPED     ol;
   #endif
     EIOTYPE        type;
-    uint8_t *      b;
+    const uint8_t *b;
     unsigned long  n;
 };
 
@@ -36,9 +36,32 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     CDevice() = default;
 
+    CDevice(const std::string& aFilename)
+    {
+      #ifdef WIN32
+        iFD = CreateFileA(
+          aFilename.c_str(),
+          GENERIC_READ|GENERIC_WRITE,
+          FILE_SHARE_READ|FILE_SHARE_WRITE,
+          NULL,
+          OPEN_ALWAYS,
+          FILE_FLAG_OVERLAPPED,
+          NULL);
+
+        if (iFD != INVALID_HANDLE_VALUE)
+        {
+          iConnected = true;
+        }
+        else
+        {
+          std::cout << GetLastError();
+        }
+      #endif 
+    }
+
     virtual ~CDevice() {};
 
-    virtual void Read(uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    virtual void Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
       if (iConnected)
       {
@@ -69,7 +92,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       }
     }
 
-    virtual void Write(uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
       if (iConnected)
       {
@@ -105,5 +128,5 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 };
 
 using SPCDevice = std::shared_ptr<CDevice>;
-
+using WPCDevice = std::weak_ptr<CDevice>;
 #endif //DEVICE_HPP

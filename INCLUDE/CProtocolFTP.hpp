@@ -27,7 +27,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void Upload(const std::string& fRemote, const std::string& fLocal)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       iJobQ.emplace_back("PASV", "", "", nullptr);
 
@@ -38,7 +38,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void Download(TResponseCbk cbk, const std::string& fRemote, const std::string& fLocal = "")
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       iJobQ.emplace_back("PASV", "", "", nullptr);
 
@@ -49,7 +49,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void List(TResponseCbk cbk, const std::string& fRemote = "")
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       if (cbk)
       {
@@ -63,7 +63,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void GetCurrentDir(TResponseCbk cbk)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       iJobQ.emplace_back("PWD", "", "", cbk);
 
@@ -72,7 +72,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void SetCurrentDir(TResponseCbk cbk, const std::string& dir)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       iJobQ.emplace_back("CWD", dir, "", cbk);
 
@@ -81,7 +81,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void CreateDir(TResponseCbk cbk, const std::string& dir)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       iJobQ.emplace_back("MKD", dir, "", cbk);
 
@@ -90,7 +90,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void RemoveDir(TResponseCbk cbk, const std::string& dir)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       iJobQ.emplace_back("RMD", dir, "", cbk);
 
@@ -99,7 +99,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void Quit(TResponseCbk cbk)
     {
-      std::lock_guard<std::recursive_mutex> lg(iLock);
+      std::lock_guard<std::mutex> lg(iLock);
 
       iJobQ.emplace_back("QUIT", "", "", cbk);
 
@@ -115,6 +115,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     std::atomic_char iPendingReplies = 0;
 
     SPCDeviceSocket iDataChannel = nullptr;
+
+    SPCDevice iFileDevice = nullptr;
 
     std::list<
       std::tuple<
@@ -341,13 +343,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       if (!iPendingReplies && !iDataChannel->IsConnected())
       {
-        iDataChannel->RemoveAllEventListeners();
+        iDataChannel->MarkRemoveAllListeners();
 
-        auto D = GetDispatcher();
-
-        D->RemoveEventListener(iDataChannel);
-
-        assert(iDataChannel.use_count() == 1);
+        iDataChannel->MarkRemoveSelfAsListener();
 
         iJobQ.pop_front();
 
@@ -372,16 +370,16 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       auto observer = std::make_shared<CListener>(
         [this]() {
-          DataChannelConnect();
+          OnDataChannelConnect();
         },
         [this](const uint8_t *b, size_t n) {
-          DataChannelRead(b, n);
+          OnDataChannelRead(b, n);
         },
         [this](const uint8_t *b, size_t n) {
-          DataChannelWrite(b, n);
+          OnDataChannelWrite(b, n);
         },
         [this](){
-          DataChannelDisconnect();
+          OnDataChannelDisconnect();
         });
 
       auto D = GetDispatcher();
@@ -391,20 +389,49 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       iDataChannel->StartSocketClient(host, port);
     }
 
-    virtual void DataChannelConnect(void)
+    virtual void OnDataChannelConnect(void)
     {
       assert (!iJobQ.empty());
 
-      auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, listcbk] = iJobQ.front();
 
-      assert(command == "LIST" || command == "RETR" || command == "STOR");
+      assert(cmd == "LIST" || cmd == "RETR" || cmd == "STOR");
 
       iPendingReplies = 1;
 
-      SendCommand(command, fRemote.c_str());
+      SendCommand(cmd, fRemote.c_str());
+
+      if (cmd == "STOR")
+      {
+        iFileDevice = std::make_shared<CDevice>(fLocal.c_str());
+
+        auto observer = std::make_shared<CListener>(
+          nullptr,
+          [this, offset = 10] (const uint8_t *b, size_t n) mutable {
+            std::cout << "n : " << n << "\n";
+
+              iDataChannel->Write(b, n);
+              iFileDevice->Read(nullptr, 0, offset);
+              offset += 10;
+
+          },
+          nullptr,
+          [this](){
+              auto D = GetDispatcher();
+              iFileDevice->RemoveAllEventListeners();
+              D->RemoveEventListener(iFileDevice);
+              iDataChannel->Terminate();
+          });
+
+        auto D = GetDispatcher();
+
+        D->AddEventListener(iFileDevice)->AddEventListener(observer);
+
+        iFileDevice->Read(nullptr, 0, 0);
+      }
     }
 
-    virtual void DataChannelRead(const uint8_t *b, size_t n)
+    virtual void OnDataChannelRead(const uint8_t *b, size_t n)
     {
       auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
 
@@ -418,12 +445,12 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       }
     }
 
-    virtual void DataChannelWrite(const uint8_t *b, size_t n)
+    virtual void OnDataChannelWrite(const uint8_t *b, size_t n)
     {
       auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
     }
 
-    virtual void DataChannelDisconnect(void)
+    virtual void OnDataChannelDisconnect(void)
     {
       auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
 
