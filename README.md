@@ -6,13 +6,12 @@ C++17 network protocol library
 - Header only
 - Supported protocols
   * FTP
-	* FTPS
-	* SSH
-	* Websockets
+  * FTPS
+  * SSH
+  * Websockets
 
-### cmake build
+Build
 
-From project root:
 ```sh
 mkdir build
 cd build
