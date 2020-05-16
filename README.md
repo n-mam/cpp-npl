@@ -4,11 +4,12 @@ C++17 network protocol library
 
 - Cross platform
 - Header only
+- Asynchronous
 - Supported protocols
   * FTP
-  * FTPS
-  * SSH
-  * Websockets
+  * FTPS (WIP)
+  * SSH (WIP)
+  * Websockets (WIP)
 
 Build
 

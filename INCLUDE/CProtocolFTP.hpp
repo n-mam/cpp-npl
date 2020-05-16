@@ -65,7 +65,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::recursive_mutex> lg(iLock);
 
-      iJobQ.emplace_back("PWD", "", "", nullptr);
+      iJobQ.emplace_back("PWD", "", "", cbk);
 
       ProcessNextJob();       
     }
@@ -74,7 +74,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::recursive_mutex> lg(iLock);
 
-      iJobQ.emplace_back("CWD", dir, "", nullptr);
+      iJobQ.emplace_back("CWD", dir, "", cbk);
 
       ProcessNextJob();       
     }
@@ -83,7 +83,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::recursive_mutex> lg(iLock);
 
-      iJobQ.emplace_back("MKD", dir, "", nullptr);
+      iJobQ.emplace_back("MKD", dir, "", cbk);
 
       ProcessNextJob();    
     }
@@ -92,7 +92,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::recursive_mutex> lg(iLock);
 
-      iJobQ.emplace_back("RMD", dir, "", nullptr);
+      iJobQ.emplace_back("RMD", dir, "", cbk);
 
       ProcessNextJob();  
     }
@@ -101,7 +101,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::recursive_mutex> lg(iLock);
 
-      iJobQ.emplace_back("QUIT", "", "", nullptr);
+      iJobQ.emplace_back("QUIT", "", "", cbk);
 
       ProcessNextJob();       
     }
@@ -174,6 +174,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         std::cout << msg[i];
       }
+
+      std::cout << "\n";
 
       for (int i = 0; i < sizeof(FSM) / sizeof(FSM[0]); i++)
       {
@@ -266,6 +268,15 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void ProcessGenCmdEvent(char code)
     {
+      auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
+
+      if (listcbk)
+      {
+        auto& m = iMessages.back();
+        std::string response(m.begin(), m.end());
+        listcbk(response);
+      }
+
       iPendingReplies--;
       iJobQ.pop_front();
       iJobInProgress.clear();
