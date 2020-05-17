@@ -19,9 +19,10 @@ int main(void)
   }, "vcpkg");
 
   ftp->Upload("y.txt", "C:\\x.txt");
-  // ftp->Download([](const std::string& data){
-  //   std::cout << data;
-  // }, "bootstrap-vcpkg.bat");
+
+  ftp->Download([](const std::string& data){
+    std::cout << data;
+  }, "bootstrap-vcpkg.bat");
 
   ftp->Quit([](const std::string& resp){
     std::cout << resp << "\n";

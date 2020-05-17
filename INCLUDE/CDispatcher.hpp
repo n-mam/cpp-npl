@@ -137,7 +137,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
           bool fRet = GetQueuedCompletionStatus(iEventPort, &n, &k, &o, INFINITE);
 
-          std::cout << (void *)k << " fRet " << fRet << ", n " << n << "\n";
+          //std::cout << "\n" << (void *)k << " fRet " << fRet << ", n " << n << "\n";
 
           if (!fRet)
           {

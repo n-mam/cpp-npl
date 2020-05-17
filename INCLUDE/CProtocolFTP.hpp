@@ -285,26 +285,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-/*
-		PASV Data Transfer Without Protection
-
-Client 					Server
-control 	data 				data control
-
-PASV -------------------------------------------------------->
-						socket()
-						bind()
-<------------------------------------------ 227 (w,x,y,z,a,b)
-		socket()
-STOR file --------------------------------------------------->
-		connect() ----------> accept()
-<-------------------------------------------------------- 150
-		write()   ----------> read()
-		close()   ----------> close()
-<-------------------------------------------------------- 226
-
-==============================================================
-*/
     virtual void ProcessPasvResponse(char code)
     {
       if (code == '2')
@@ -379,11 +359,14 @@ STOR file --------------------------------------------------->
         }
       }
 
-      if (!iPendingReplies && !iDataChannel->IsConnected())
+      if (!iPendingReplies && (!iDataChannel || !iDataChannel->IsConnected()))
       {
-        iDataChannel->MarkRemoveAllListeners();
-        iDataChannel->MarkRemoveSelfAsListener();
-        iDataChannel.reset();
+        if (iDataChannel)
+        {
+          iDataChannel->MarkRemoveAllListeners();
+          iDataChannel->MarkRemoveSelfAsListener();
+          iDataChannel.reset();
+        }
 
         iJobQ.pop_front();
         iProtocolState = "READY";
@@ -434,7 +417,6 @@ STOR file --------------------------------------------------->
         auto observer = std::make_shared<CListener>(
           nullptr,
           [this, offset = 10] (const uint8_t *b, size_t n) mutable {
-            std::cout << "\nn : " << n << "\n";
             iDataChannel->Write(b, n);
             iFileDevice->Read(nullptr, 0, offset);
             offset += 10;
@@ -456,15 +438,18 @@ STOR file --------------------------------------------------->
 
     virtual void OnDataChannelRead(const uint8_t *b, size_t n)
     {
-      auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
 
-      if (command == "LIST")
+      if (cmd == "LIST")
       {
         iDirectoryList.append((char *)b, n);
       }
-      else
+      else if (cmd == "RETR")
       {
-        std::cout << std::string((char *)b, n);
+        if (cbk)
+        {
+          cbk
+        }
       }
     }
 

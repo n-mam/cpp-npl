@@ -17,11 +17,8 @@ class CDeviceSocket : public CDevice
 
     ~CDeviceSocket()
     {
-      if (shutdown((SOCKET)iFD, 0) != 0)
-      {
-        std::cout << "error: " << WSAGetLastError() << "\n";
-      }
-      assert (closesocket((SOCKET)iFD) == 0);
+      shutdown((SOCKET)iFD, 2);
+      closesocket((SOCKET)iFD);
     }
 
     void StartSocketClient(std::string host, int port)
@@ -140,6 +137,9 @@ class CDeviceSocket : public CDevice
 
     virtual void OnConnect() override
     {
+      #ifdef WIN32
+      setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+      #endif
       CDevice::OnConnect();
       Read();      
     }
