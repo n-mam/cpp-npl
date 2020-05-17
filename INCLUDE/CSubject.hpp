@@ -22,7 +22,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     virtual ~CSubject()
     {
       std::lock_guard<std::mutex> lg(iLock);
-      RemoveAllEventListeners();
+      RemoveAllEventListenersInternal();
     }
 
     virtual void SetTarget(const WPCSubject& target)
@@ -116,23 +116,9 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       iMarkRemoveSelfAsListener = true;
     }
 
-    virtual bool ProcessMarkRemoveAllListeners(void)
+    virtual bool IsMarkRemoveSelfAsListener(void)
     {
-      std::lock_guard<std::mutex> lg(iLock);
-      if (iMarkRemoveAllListeners)
-      {
-        RemoveAllEventListenersInternal();        
-      }
-    }
-
-    virtual void UpdateListenerRoles(const SPCSubject& o)
-    {
-      o->ProcessMarkRemoveAllListeners();
-
-      if (o->IsMarkRemoveSelfAsListener())
-      {
-        this->RemoveEventListener(o);
-      }
+      return iMarkRemoveSelfAsListener;
     }
 
     virtual bool IsConnected(void)
@@ -185,18 +171,35 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
     bool iMarkRemoveSelfAsListener = false;
 
+    virtual void ProcessMarkRemoveAllListeners(void)
+    {
+      if (this->iMarkRemoveAllListeners)
+      {
+        this->RemoveAllEventListenersInternal();        
+      }
+
+      for (auto& it = iObservers.begin(); it != iObservers.end(); )
+      {
+        if ((*it)->IsMarkRemoveSelfAsListener())
+        {
+          it = this->RemoveEventListenerInternal(*it);
+        }
+        else
+        {
+          it++;
+        }
+      }
+    }
+
     virtual void RemoveAllEventListenersInternal()
     {
-      for (auto& observer : iObservers)
-      {
-        RemoveEventListenerInternal(observer);
-      }
+      iObservers.clear();
       iMarkRemoveAllListeners = false;      
     }
 
-    virtual void RemoveEventListenerInternal(const SPCSubject& consumer)
+    auto RemoveEventListenerInternal(const SPCSubject& consumer)
     {
-      iObservers.erase(
+      return iObservers.erase(
         std::remove(
           iObservers.begin(), iObservers.end(), consumer),
         iObservers.end()
@@ -209,6 +212,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       {
         observer->OnConnect();
       }
+      ProcessMarkRemoveAllListeners();
     }
 
     virtual void NotifyRead(const T2 *b, size_t n)
@@ -217,6 +221,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       {
         observer->OnRead(b, n);
       }
+      ProcessMarkRemoveAllListeners();
     }
 
     virtual void NotifyWrite(const T2 *b, size_t n)
@@ -225,6 +230,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       {
         observer->OnWrite(b, n);
       }
+      ProcessMarkRemoveAllListeners();
     }
 
     virtual void NotifyDisconnect()
@@ -233,6 +239,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       {
         observer->OnDisconnect();
       }
+      ProcessMarkRemoveAllListeners();
     }
 };
 

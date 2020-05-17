@@ -285,6 +285,26 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
+/*
+		PASV Data Transfer Without Protection
+
+Client 					Server
+control 	data 				data control
+
+PASV -------------------------------------------------------->
+						socket()
+						bind()
+<------------------------------------------ 227 (w,x,y,z,a,b)
+		socket()
+STOR file --------------------------------------------------->
+		connect() ----------> accept()
+<-------------------------------------------------------- 150
+		write()   ----------> read()
+		close()   ----------> close()
+<-------------------------------------------------------- 226
+
+==============================================================
+*/
     virtual void ProcessPasvResponse(char code)
     {
       if (code == '2')
@@ -317,6 +337,16 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
         iPendingReplies--;
 
+        assert (!iJobQ.empty());
+
+        auto& [cmd, fRemote, fLocal, listcbk] = iJobQ.front();
+
+        assert(cmd == "LIST" || cmd == "RETR" || cmd == "STOR");
+
+        iPendingReplies = 1;
+
+        SendCommand(cmd, fRemote.c_str());
+
         OpenDataChannel(host, port);
       }
       else
@@ -332,6 +362,14 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       switch (code)
       {
+        case '1':
+        {
+          if (iFileDevice)
+          {
+            iFileDevice->Read(nullptr, 0, 0);
+          }
+          break;
+        }
         case '2':
         case '4':
         case '5':
@@ -344,13 +382,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       if (!iPendingReplies && !iDataChannel->IsConnected())
       {
         iDataChannel->MarkRemoveAllListeners();
-
         iDataChannel->MarkRemoveSelfAsListener();
+        iDataChannel.reset();
 
         iJobQ.pop_front();
-
         iProtocolState = "READY";
-
         iJobInProgress.clear();
 
         if (iJobQ.size())
@@ -363,8 +399,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     virtual void OpenDataChannel(const std::string& host, int port)
     {
       assert(iProtocolState == "DATA");
-
-      iDataChannel.reset();
 
       iDataChannel = std::make_shared<CDeviceSocket>();
 
@@ -391,15 +425,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnDataChannelConnect(void)
     {
-      assert (!iJobQ.empty());
-
-      auto& [cmd, fRemote, fLocal, listcbk] = iJobQ.front();
-
-      assert(cmd == "LIST" || cmd == "RETR" || cmd == "STOR");
-
-      iPendingReplies = 1;
-
-      SendCommand(cmd, fRemote.c_str());
+       auto& [cmd, fRemote, fLocal, listcbk] = iJobQ.front();
 
       if (cmd == "STOR")
       {
@@ -408,26 +434,23 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         auto observer = std::make_shared<CListener>(
           nullptr,
           [this, offset = 10] (const uint8_t *b, size_t n) mutable {
-            std::cout << "n : " << n << "\n";
-
-              iDataChannel->Write(b, n);
-              iFileDevice->Read(nullptr, 0, offset);
-              offset += 10;
-
+            std::cout << "\nn : " << n << "\n";
+            iDataChannel->Write(b, n);
+            iFileDevice->Read(nullptr, 0, offset);
+            offset += 10;
           },
           nullptr,
           [this](){
-              auto D = GetDispatcher();
-              iFileDevice->RemoveAllEventListeners();
-              D->RemoveEventListener(iFileDevice);
-              iDataChannel->Terminate();
+            iDataChannel->MarkRemoveAllListeners();
+            iDataChannel->MarkRemoveSelfAsListener();            
+            iFileDevice->MarkRemoveAllListeners();
+            iFileDevice->MarkRemoveSelfAsListener();
+            iDataChannel.reset();            
           });
 
         auto D = GetDispatcher();
 
         D->AddEventListener(iFileDevice)->AddEventListener(observer);
-
-        iFileDevice->Read(nullptr, 0, 0);
       }
     }
 

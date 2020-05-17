@@ -17,13 +17,11 @@ class CDeviceSocket : public CDevice
 
     ~CDeviceSocket()
     {
-      Terminate();
-    }
-
-    void Terminate(void)
-    {
-      shutdown((SOCKET)iFD, 2);
-      closesocket((SOCKET)iFD);
+      if (shutdown((SOCKET)iFD, 0) != 0)
+      {
+        std::cout << "error: " << WSAGetLastError() << "\n";
+      }
+      assert (closesocket((SOCKET)iFD) == 0);
     }
 
     void StartSocketClient(std::string host, int port)
