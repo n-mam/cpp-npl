@@ -141,7 +141,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
           if (!fRet)
           {
-            std::cout << (void *)k  << " GQCS failed : " << GetLastError() << "\n";
+            std::cout << "\n" << (void *)k  << " GQCS failed : " << GetLastError() << "\n";
           }
 
           if (n == 0 && k == 0 && o == 0)
@@ -205,4 +205,4 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 using SPCDispatcher = std::shared_ptr<CDispatcher>;
 using UPCDispatcher = std::unique_ptr<CDispatcher>;
 
-#endif //DISPATCHER_HPP
+#endif //DISPATCHER_HPP;

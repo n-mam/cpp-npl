@@ -17,8 +17,13 @@ class CDeviceSocket : public CDevice
 
     ~CDeviceSocket()
     {
-      shutdown((SOCKET)iFD, 2);
+      shutdown((SOCKET)iFD, 0);
       closesocket((SOCKET)iFD);
+    }
+
+    void Shutdown(void)
+    {
+      shutdown((SOCKET)iFD, 1);      
     }
 
     void StartSocketClient(std::string host, int port)

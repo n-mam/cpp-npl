@@ -110,13 +110,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     std::string iDirectoryList;
 
-    std::atomic_flag iJobInProgress = ATOMIC_FLAG_INIT;
-
-    std::atomic_char iPendingReplies = 0;
+    SPCDevice iFileDevice = nullptr;
 
     SPCDeviceSocket iDataChannel = nullptr;
 
-    SPCDevice iFileDevice = nullptr;
+    std::atomic_flag iJobInProgress = ATOMIC_FLAG_INIT;
+
+    std::atomic_char iPendingResponse = 0;
 
     std::list<
       std::tuple<
@@ -136,7 +136,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       TStateFn     iTransitionFn;
     };
 
-    Transition FSM[25] =
+    Transition FSM[26] =
     {
       // Connection states
       { "CONNECTED" , '1', "CONNECTED" , nullptr                                        },
@@ -155,29 +155,30 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       { "PASS"      , '4', "USER",       [this]() { NotifyState("PASS", 'F');}          },
       { "PASS"      , '5', "USER",       [this]() { NotifyState("PASS", 'F');}          },
       // PASV states
-      { "PASV"      , '2', "DATA"  ,     [this]() { ProcessPasvResponse('2'); }            },
-      { "PASV"      , '4', "READY"  ,    [this]() { ProcessPasvResponse('4'); }            },
-      { "PASV"      , '5', "READY"  ,    [this]() { ProcessPasvResponse('5'); }            },
+      { "PASV"      , '1', "DATA"  ,     [this]() { SkipCommand(2);        }            },      
+      { "PASV"      , '2', "DATA"  ,     [this]() { ProcessPasvResponse(); }            },
+      { "PASV"      , '4', "READY"  ,    [this]() { SkipCommand(2);        }            },
+      { "PASV"      , '5', "READY"  ,    [this]() { SkipCommand(2);        }            },
       // DATA command (LIST RETR STOR) states
       { "DATA"      , '1', "DATA"  ,     [this] () { ProcessDataCmdEvent('1'); }        },
       { "DATA"      , '2', "DATA" ,      [this] () { ProcessDataCmdEvent('2'); }        },
       { "DATA"      , '4', "READY" ,     [this] () { ProcessDataCmdEvent('4'); }        },
       { "DATA"      , '5', "READY" ,     [this] () { ProcessDataCmdEvent('5'); }        },
-      { "GEN"       , '1', "READY" ,     [this] () { ProcessGenCmdEvent('1');  }        },
-      { "GEN"       , '2', "READY" ,     [this] () { ProcessGenCmdEvent('2');  }        },
-      { "GEN"       , '3', "READY" ,     [this] () { ProcessGenCmdEvent('3');  }        },
-      { "GEN"       , '4', "READY" ,     [this] () { ProcessGenCmdEvent('4');  }        },
-      { "GEN"       , '5', "READY" ,     [this] () { ProcessGenCmdEvent('5');  }        }
+      { "GEN"       , '1', "READY" ,     [this] () { ProcessGenCmdEvent();  }           },
+      { "GEN"       , '2', "READY" ,     [this] () { ProcessGenCmdEvent();  }           },
+      { "GEN"       , '3', "READY" ,     [this] () { ProcessGenCmdEvent();  }           },
+      { "GEN"       , '4', "READY" ,     [this] () { ProcessGenCmdEvent();  }           },
+      { "GEN"       , '5', "READY" ,     [this] () { ProcessGenCmdEvent();  }           }
     };
 
     virtual void StateMachine(const std::vector<uint8_t>& msg) override
     {
+      std::cout << "\n";
+
       for (size_t i = 0; i < msg.size(); i++)
       {
         std::cout << msg[i];
       }
-
-      std::cout << "\n";
 
       for (int i = 0; i < sizeof(FSM) / sizeof(FSM[0]); i++)
       {
@@ -234,23 +235,34 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual bool IsGenericCommand(const std::string& cmd)
+    virtual bool IsTransferCommand(const std::string& cmd)
     {
       return (
-        cmd != "RETR" && 
-        cmd != "LIST" && 
-        cmd != "STOR" && 
-        cmd != "PASV" &&
-        cmd != "PORT");
+        cmd == "RETR" || 
+        cmd == "LIST" ||
+        cmd == "STOR");
+    }
+    
+    virtual void SkipCommand(int count = 1)
+    {
+      for (int i = 0; i < count; i++)
+      {
+        iJobQ.pop_front();
+        iPendingResponse--;
+      }
+
+      assert(iPendingResponse.load() == 0);
+
+      iJobInProgress.clear();
+
+      ProcessNextJob();
     }
 
     virtual void ProcessNextJob(void)
     {
       if (iJobInProgress.test_and_set() == false)
       {
-        assert(iPendingReplies.load() == 0);
-
-        assert(iProtocolState == "READY");
+        assert(iPendingResponse.load() == 0);
 
         if (!iJobQ.size())
         {
@@ -258,84 +270,69 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           return;
         }
 
-        auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
+        auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
 
-        iPendingReplies = 1;
+        iPendingResponse = 1;
 
-        iProtocolState = IsGenericCommand(command) ? "GEN": command;
-
-        SendCommand(command, fRemote);
-      }
-    }
-
-    virtual void ProcessGenCmdEvent(char code)
-    {
-      auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
-
-      if (listcbk)
-      {
-        auto& m = iMessages.back();
-        std::string response(m.begin(), m.end());
-        listcbk(response);
-      }
-
-      iPendingReplies--;
-      iJobQ.pop_front();
-      iJobInProgress.clear();
-      ProcessNextJob();
-    }
-
-    virtual void ProcessPasvResponse(char code)
-    {
-      if (code == '2')
-      {
-        auto& m = iMessages.back();
-
-        std::string pasv(m.begin(), m.end());
-
-        size_t first = pasv.find("(") + 1;
-        size_t last = pasv.find(")");
-
-        auto spec = pasv.substr(first, last - first);
-
-        uint32_t h1,h2,h3,h4,p1,p2;
-        int fRet = sscanf(spec.c_str(), "%d,%d,%d,%d,%d,%d", &h1, &h2, &h3, &h4, &p1, &p2);
-
-        if (fRet < 6)
+        if (IsTransferCommand(cmd))
         {
-          std::cout << "Faled to parse PASV response\n";
+          iPendingResponse = 2;          
+          iProtocolState = "DATA";
+        }
+        else if (cmd == "PASV")
+        {
+          iProtocolState = "PASV";
+        }
+        else
+        {
+          iProtocolState = "GEN";
         }
 
-        auto host = std::to_string(h1) + "." + 
-                    std::to_string(h2) + "." +
-                    std::to_string(h3) + "." +
-                    std::to_string(h4);
-
-        int port = (p1 << 8) + p2;
-
-        iJobQ.pop_front();
-
-        iPendingReplies--;
-
-        assert (!iJobQ.empty());
-
-        auto& [cmd, fRemote, fLocal, listcbk] = iJobQ.front();
-
-        assert(cmd == "LIST" || cmd == "RETR" || cmd == "STOR");
-
-        iPendingReplies = 1;
-
-        SendCommand(cmd, fRemote.c_str());
-
-        OpenDataChannel(host, port);
+        SendCommand(cmd, fRemote);
       }
-      else
+    }
+
+    virtual void ProcessGenCmdEvent(void)
+    {
+      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
+
+      if (cbk)
       {
-        iJobQ.pop_front(); 
-        iJobQ.pop_front();
-        iPendingReplies = 0;
-        iJobInProgress.clear();
+        auto& m = iMessages.back();
+        std::string resp(m.begin(), m.end());
+        cbk(resp);
       }
+
+      SkipCommand(1);
+    }
+
+    virtual void ProcessPasvResponse(void)
+    {
+      auto& m = iMessages.back();
+
+      std::string pasv(m.begin(), m.end());
+
+      auto spec = pasv.substr(pasv.find('('));
+
+      uint32_t h1, h2, h3, h4, p1, p2;
+
+      int fRet = sscanf(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
+
+      if (fRet < 6)
+      {
+        std::cout << "Faled to parse PASV response\n";
+      }
+
+      auto host = std::to_string(h1) + "." + 
+                  std::to_string(h2) + "." +
+                  std::to_string(h3) + "." +
+                  std::to_string(h4);
+
+      int port = (p1 << 8) + p2;
+
+      SkipCommand(1);
+
+      OpenDataChannel(host, port);
     }
 
     virtual void ProcessDataCmdEvent(char code = '0')
@@ -348,41 +345,36 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           {
             iFileDevice->Read(nullptr, 0, 0);
           }
+          iPendingResponse--;
           break;
         }
         case '2':
         case '4':
         case '5':
         {
-          iPendingReplies--;
+          iPendingResponse--;
           break;
         }
       }
-
-      if (!iPendingReplies && (!iDataChannel || !iDataChannel->IsConnected()))
+      // For downloads IsConnected would fail
+      // For uploads iDataChannel would be null as we reset it
+      if (!iPendingResponse && (!iDataChannel || !iDataChannel->IsConnected()))
       {
         if (iDataChannel)
         {
-          iDataChannel->MarkRemoveAllListeners();
-          iDataChannel->MarkRemoveSelfAsListener();
-          iDataChannel.reset();
+          ResetDataChannel();
         }
 
         iJobQ.pop_front();
-        iProtocolState = "READY";
+
         iJobInProgress.clear();
 
-        if (iJobQ.size())
-        {
-          ProcessNextJob();
-        }
+        ProcessNextJob();
       }
     }
 
     virtual void OpenDataChannel(const std::string& host, int port)
     {
-      assert(iProtocolState == "DATA");
-
       iDataChannel = std::make_shared<CDeviceSocket>();
 
       auto observer = std::make_shared<CListener>(
@@ -408,7 +400,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnDataChannelConnect(void)
     {
-       auto& [cmd, fRemote, fLocal, listcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
 
       if (cmd == "STOR")
       {
@@ -423,17 +415,23 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           },
           nullptr,
           [this](){
-            iDataChannel->MarkRemoveAllListeners();
-            iDataChannel->MarkRemoveSelfAsListener();            
             iFileDevice->MarkRemoveAllListeners();
             iFileDevice->MarkRemoveSelfAsListener();
-            iDataChannel.reset();            
-          });
+            iDataChannel->Shutdown();
+          }
+        );
 
         auto D = GetDispatcher();
 
         D->AddEventListener(iFileDevice)->AddEventListener(observer);
       }
+    }
+
+    virtual void ResetDataChannel(void)
+    {
+      iDataChannel->MarkRemoveAllListeners();
+      iDataChannel->MarkRemoveSelfAsListener();
+      iDataChannel.reset();
     }
 
     virtual void OnDataChannelRead(const uint8_t *b, size_t n)
@@ -448,7 +446,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         if (cbk)
         {
-          cbk
+          cbk(std::string((char *)b, n));
         }
       }
     }
