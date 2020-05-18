@@ -23,14 +23,15 @@ cmake --build .
 FTP example
 ```cpp
 #include <iostream>
+
 #include <npl.hpp>
 
 int main(void)
 {
   auto ftp = npl::make_ftp("127.0.0.1", 21, "anonymous", "welcome123");
 
-  ftp->GetCurrentDir([](const std::string& dir){
-    std::cout << "current directory : " << dir << "\n";
+  ftp->GetCurrentDir([](const std::string& resp){
+    std::cout << resp << "\n";
   });
 
   ftp->List([](const std::string& list) {
@@ -39,7 +40,15 @@ int main(void)
 
   ftp->SetCurrentDir([](const std::string& resp){
     std::cout << resp << "\n";
-  }, "xyz");
+  }, "vcpkg");
+
+  ftp->Upload([](const std::string& status){
+    std::cout << status;
+  },"y.txt", "C:\\x.txt");
+
+  ftp->Download([](const std::string& data){
+    std::cout << data;
+  }, "bootstrap-vcpkg.bat");
 
   ftp->Quit([](const std::string& resp){
     std::cout << resp << "\n";

@@ -12,7 +12,8 @@
 #include <cstring>
 #include <functional>
 
-using TResponseCbk = std::function<void (const std::string&)>;
+using TDataCbk = std::function<void (char *, size_t)>;
+using TRespCbk = std::function<void (const std::string&)>;
 
 class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 {
@@ -25,83 +26,83 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual ~CProtocolFTP() {}
 
-    virtual void Upload(const std::string& fRemote, const std::string& fLocal)
+    virtual void Upload(TDataCbk cbk, const std::string& fRemote, const std::string& fLocal)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("PASV", "", "", nullptr);
+      iJobQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
-      iJobQ.emplace_back("STOR", fRemote, fLocal, nullptr);
+      iJobQ.emplace_back("STOR", fRemote, fLocal, nullptr, cbk);
 
       ProcessNextJob();
     }
 
-    virtual void Download(TResponseCbk cbk, const std::string& fRemote, const std::string& fLocal = "")
+    virtual void Download(TDataCbk cbk, const std::string& fRemote, const std::string& fLocal = "")
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("PASV", "", "", nullptr);
+      iJobQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
-      iJobQ.emplace_back("RETR", fRemote, fLocal, cbk);
+      iJobQ.emplace_back("RETR", fRemote, fLocal, nullptr, cbk);
 
       ProcessNextJob();
     }
 
-    virtual void List(TResponseCbk cbk, const std::string& fRemote = "")
+    virtual void List(TDataCbk cbk, const std::string& fRemote = "")
     {
       std::lock_guard<std::mutex> lg(iLock);
 
       if (cbk)
       {
-        iJobQ.emplace_back("PASV", "", "", nullptr);
+        iJobQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
-        iJobQ.emplace_back("LIST", fRemote, "", cbk);
+        iJobQ.emplace_back("LIST", fRemote, "", nullptr, cbk);
 
         ProcessNextJob();        
       }
     }
 
-    virtual void GetCurrentDir(TResponseCbk cbk)
+    virtual void GetCurrentDir(TRespCbk cbk)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("PWD", "", "", cbk);
+      iJobQ.emplace_back("PWD", "", "", cbk, nullptr);
+
+      ProcessNextJob();
+    }
+
+    virtual void SetCurrentDir(TRespCbk cbk, const std::string& dir)
+    {
+      std::lock_guard<std::mutex> lg(iLock);
+
+      iJobQ.emplace_back("CWD", dir, "", cbk, nullptr);
 
       ProcessNextJob();       
     }
 
-    virtual void SetCurrentDir(TResponseCbk cbk, const std::string& dir)
+    virtual void CreateDir(TRespCbk cbk, const std::string& dir)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("CWD", dir, "", cbk);
-
-      ProcessNextJob();       
-    }
-
-    virtual void CreateDir(TResponseCbk cbk, const std::string& dir)
-    {
-      std::lock_guard<std::mutex> lg(iLock);
-
-      iJobQ.emplace_back("MKD", dir, "", cbk);
+      iJobQ.emplace_back("MKD", dir, "", cbk, nullptr);
 
       ProcessNextJob();    
     }
 
-    virtual void RemoveDir(TResponseCbk cbk, const std::string& dir)
+    virtual void RemoveDir(TRespCbk cbk, const std::string& dir)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("RMD", dir, "", cbk);
+      iJobQ.emplace_back("RMD", dir, "", cbk, nullptr);
 
       ProcessNextJob();  
     }
 
-    virtual void Quit(TResponseCbk cbk)
+    virtual void Quit(TRespCbk cbk)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("QUIT", "", "", cbk);
+      iJobQ.emplace_back("QUIT", "", "", cbk, nullptr);
 
       ProcessNextJob();       
     }
@@ -123,7 +124,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
        std::string,      // command
        std::string,      // fRemote
        std::string,      // fLocal
-       TResponseCbk      // cbk
+       TRespCbk,         // resp cbk
+       TDataCbk          // data cbk
     >> iJobQ;
 
     using TStateFn = std::function<void (void)>;
@@ -149,21 +151,21 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       { "USER"      , '4', "USER",       [this](){ }                                    },
       { "USER"      , '5', "USER",       [this](){ }                                    },
       // PASS states
-      { "PASS"      , '1', "USER",       [this]() { NotifyState("PASS", 'E');}          },
-      { "PASS"      , '2', "READY" ,     [this]() { OnLogin(); }          },
+      { "PASS"      , '1', "USER",       [this]() { ProcessLoginEvent(); }          },
+      { "PASS"      , '2', "READY" ,     [this]() { ProcessLoginEvent(true); }          },
       { "PASS"      , '3', "ACCT" ,      [this]() { SendCommand("ACCT");}               },
-      { "PASS"      , '4', "USER",       [this]() { NotifyState("PASS", 'F');}          },
-      { "PASS"      , '5', "USER",       [this]() { NotifyState("PASS", 'F');}          },
+      { "PASS"      , '4', "USER",       [this]() { ProcessLoginEvent(); }          },
+      { "PASS"      , '5', "USER",       [this]() { ProcessLoginEvent(); }          },
       // PASV states
       { "PASV"      , '1', "DATA"  ,     [this]() { SkipCommand(2);        }            },      
       { "PASV"      , '2', "DATA"  ,     [this]() { ProcessPasvResponse(); }            },
       { "PASV"      , '4', "READY"  ,    [this]() { SkipCommand(2);        }            },
       { "PASV"      , '5', "READY"  ,    [this]() { SkipCommand(2);        }            },
       // DATA command (LIST RETR STOR) states
-      { "DATA"      , '1', "DATA"  ,     [this] () { ProcessDataCmdEvent('1'); }        },
-      { "DATA"      , '2', "DATA" ,      [this] () { ProcessDataCmdEvent('2'); }        },
-      { "DATA"      , '4', "READY" ,     [this] () { ProcessDataCmdEvent('4'); }        },
-      { "DATA"      , '5', "READY" ,     [this] () { ProcessDataCmdEvent('5'); }        },
+      { "DATA"      , '1', "DATA"  ,     [this] () { ProcessDataCmdResponse('1'); }        },
+      { "DATA"      , '2', "DATA" ,      [this] () { ProcessDataCmdResponse('2'); }        },
+      { "DATA"      , '4', "READY" ,     [this] () { ProcessDataCmdResponse('4'); }        },
+      { "DATA"      , '5', "READY" ,     [this] () { ProcessDataCmdResponse('5'); }        },
       { "GEN"       , '1', "READY" ,     [this] () { ProcessGenCmdEvent();  }           },
       { "GEN"       , '2', "READY" ,     [this] () { ProcessGenCmdEvent();  }           },
       { "GEN"       , '3', "READY" ,     [this] () { ProcessGenCmdEvent();  }           },
@@ -228,33 +230,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
     }
 
-    virtual void OnConnect(void) override
-    {
-      CProtocol::OnConnect();
-
-      auto cc = iTarget.lock();
-
-      if (cc)
-      {
-        cc->Read();
-      }
-    }
-
-    virtual void OnLogin(void)
-    {
-      iJobInProgress.clear();
-      NotifyState("PASS", 'S');
-      ProcessNextJob();
-    }
-
-    virtual bool IsTransferCommand(const std::string& cmd)
-    {
-      return (
-        cmd == "RETR" || 
-        cmd == "LIST" ||
-        cmd == "STOR");
-    }
-    
     virtual void SkipCommand(int count = 1)
     {
       for (int i = 0; i < count; i++)
@@ -282,7 +257,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           return;
         }
 
-        auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
+        auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
 
         iPendingResponse = 1;
 
@@ -305,13 +280,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void ProcessGenCmdEvent(void)
     {
-      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
 
       if (cbk)
       {
         auto& m = iMessages.back();
-        std::string resp(m.begin(), m.end());
-        cbk(resp);
+        std::string res(m.begin(), m.end());
+        cbk(res);
       }
 
       SkipCommand(1);
@@ -346,9 +321,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       OpenDataChannel(host, port);
     }
 
-    virtual void ProcessDataCmdEvent(char code = '0')
+    virtual void ProcessDataCmdResponse(char code = '0')
     {
-      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
 
       switch (code)
       {
@@ -414,7 +389,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnDataChannelConnect(void)
     {
-      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
 
       if (cmd == "STOR")
       {
@@ -441,6 +416,45 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       }
     }
 
+    virtual void OnDataChannelRead(const uint8_t *b, size_t n)
+    {
+      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+
+      if (IsTransferCommand(cmd))
+      {
+        dcbk((char *)b, n);
+      }
+    }
+
+    virtual void OnDataChannelWrite(const uint8_t *b, size_t n)
+    {
+      auto& [command, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+    }
+
+    virtual void OnDataChannelDisconnect(void)
+    {
+      ProcessDataCmdResponse();
+    }
+
+    virtual void OnConnect(void) override
+    {
+      CProtocol::OnConnect();
+
+      auto cc = iTarget.lock();
+
+      if (cc)
+      {
+        cc->Read();
+      }
+    }
+
+    virtual void ProcessLoginEvent(bool status = false)
+    {
+      iJobInProgress.clear();
+      NotifyState("PASS", 'S');
+      ProcessNextJob();
+    }
+
     virtual void ResetDataChannel(void)
     {
       iDataChannel->MarkRemoveAllListeners();
@@ -448,40 +462,14 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       iDataChannel.reset();
     }
 
-    virtual void OnDataChannelRead(const uint8_t *b, size_t n)
+    virtual bool IsTransferCommand(const std::string& cmd)
     {
-      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
-
-      if (cmd == "LIST")
-      {
-        iDirectoryList.append((char *)b, n);
-      }
-      else if (cmd == "RETR")
-      {
-        if (cbk)
-        {
-          cbk(std::string((char *)b, n));
-        }
-      }
+      return (
+        cmd == "RETR" || 
+        cmd == "LIST" ||
+        cmd == "STOR");
     }
 
-    virtual void OnDataChannelWrite(const uint8_t *b, size_t n)
-    {
-      auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
-    }
-
-    virtual void OnDataChannelDisconnect(void)
-    {
-      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
-
-      if (cmd == "LIST" && cbk)
-      {
-        cbk(iDirectoryList);
-        iDirectoryList = "";
-      }
-
-      ProcessDataCmdEvent();
-    }
 };
 
 using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;
