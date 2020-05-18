@@ -14,19 +14,19 @@ int main(void)
     std::cout << list << "\n";
   });
 
-  ftp->SetCurrentDir([](const std::string& resp){
-    std::cout << resp << "\n";
-  }, "vcpkg");
+  // ftp->SetCurrentDir([](const std::string& resp){
+  //   std::cout << resp << "\n";
+  // }, "vcpkg");
 
-  ftp->Upload("y.txt", "C:\\x.txt");
+  // ftp->Upload("y.txt", "C:\\x.txt");
 
-  ftp->Download([](const std::string& data){
-    std::cout << data;
-  }, "bootstrap-vcpkg.bat");
+  // ftp->Download([](const std::string& data){
+  //   std::cout << data;
+  // }, "bootstrap-vcpkg.bat");
 
-  ftp->Quit([](const std::string& resp){
-    std::cout << resp << "\n";
-  });
+  // ftp->Quit([](const std::string& resp){
+  //   std::cout << resp << "\n";
+  // });
 
   std::this_thread::sleep_for(std::chrono::milliseconds(15000));
 

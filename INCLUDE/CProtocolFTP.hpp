@@ -228,6 +228,18 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
     }
 
+    virtual void OnConnect(void) override
+    {
+      CProtocol::OnConnect();
+
+      auto cc = iTarget.lock();
+
+      if (cc)
+      {
+        cc->Read();
+      }
+    }
+
     virtual void OnLogin(void)
     {
       iJobInProgress.clear();
@@ -275,8 +287,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         iPendingResponse = 1;
 
         if (IsTransferCommand(cmd))
-        {
-          iPendingResponse = 2;          
+        {       
           iProtocolState = "DATA";
         }
         else if (cmd == "PASV")
@@ -337,6 +348,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void ProcessDataCmdEvent(char code = '0')
     {
+      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
+
       switch (code)
       {
         case '1':
@@ -345,7 +358,12 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           {
             iFileDevice->Read(nullptr, 0, 0);
           }
-          iPendingResponse--;
+
+          if (IsTransferCommand(cmd))
+          {
+            iDataChannel->Read();
+          }
+
           break;
         }
         case '2':
@@ -356,14 +374,10 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           break;
         }
       }
-      // For downloads IsConnected would fail
-      // For uploads iDataChannel would be null as we reset it
-      if (!iPendingResponse && (!iDataChannel || !iDataChannel->IsConnected()))
+
+      if (!iPendingResponse && iDataChannel->IsConnected())
       {
-        if (iDataChannel)
-        {
-          ResetDataChannel();
-        }
+        ResetDataChannel();
 
         iJobQ.pop_front();
 
@@ -458,11 +472,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnDataChannelDisconnect(void)
     {
-      auto& [command, fRemote, fLocal, listcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, cbk] = iJobQ.front();
 
-      if (command == "LIST" && listcbk)
+      if (cmd == "LIST" && cbk)
       {
-        listcbk(iDirectoryList);
+        cbk(iDirectoryList);
         iDirectoryList = "";
       }
 

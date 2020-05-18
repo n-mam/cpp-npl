@@ -76,6 +76,9 @@ class CDeviceSocket : public CDevice
 
         if (fRet)
         {
+          #ifdef WIN32
+          setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+          #endif          
           OnConnect();
         }
         else if (WSAGetLastError() == ERROR_IO_PENDING)
@@ -146,7 +149,6 @@ class CDeviceSocket : public CDevice
       setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
       #endif
       CDevice::OnConnect();
-      Read();      
     }
 
     virtual void OnRead(const uint8_t *b, size_t n) override

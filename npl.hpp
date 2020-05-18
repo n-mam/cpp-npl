@@ -2,12 +2,12 @@
 #include <CDeviceSocket.hpp>
 #include <CProtocolFTP.hpp>
 
-namespace npl {
-
-auto D = std::make_shared<CDispatcher>();
-
-auto make_ftp(const std::string& host, int port, const std::string& username, const std::string& password)
+namespace npl 
 {
+  auto D = std::make_shared<CDispatcher>();
+
+  auto make_ftp(const std::string& host, int port, const std::string& username, const std::string& password)
+  {
     auto cc = std::make_shared<CDeviceSocket>();
     auto ftp = std::make_shared<CProtocolFTP>();    
 
@@ -18,7 +18,7 @@ auto make_ftp(const std::string& host, int port, const std::string& username, co
     cc->StartSocketClient(host, port);
 
     return ftp;
-}
+  }
 
 } //namespace npl
 
