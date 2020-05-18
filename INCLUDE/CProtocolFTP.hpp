@@ -375,7 +375,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         }
       }
 
-      if (!iPendingResponse && iDataChannel->IsConnected())
+      if (!iPendingResponse && !iDataChannel->IsConnected())
       {
         ResetDataChannel();
 
