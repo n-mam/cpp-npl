@@ -159,6 +159,8 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
   protected:
 
+    std::string iName = "Subject";
+
     std::mutex iLock;
 
     WPCSubject iTarget;
@@ -178,7 +180,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
         this->RemoveAllEventListenersInternal();        
       }
 
-      for (auto& it = iObservers.begin(); it != iObservers.end(); )
+      for (auto it = iObservers.begin(); it != iObservers.end(); )
       {
         if ((*it)->IsMarkRemoveSelfAsListener())
         {

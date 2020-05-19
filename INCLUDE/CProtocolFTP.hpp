@@ -12,7 +12,8 @@
 #include <cstring>
 #include <functional>
 
-using TDataCbk = std::function<void (char *, size_t)>;
+using TUploadCbk = std::function<bool (char **, size_t *)>;
+using TDownloadCbk = std::function<bool (char *, size_t)>;
 using TRespCbk = std::function<void (const std::string&)>;
 
 class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
@@ -26,37 +27,39 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual ~CProtocolFTP() {}
 
-    virtual void Upload(TDataCbk cbk, const std::string& fRemote, const std::string& fLocal)
+    virtual bool Upload(TUploadCbk cbk, const std::string& fRemote)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("PASV", "", "", nullptr, nullptr);
+      if (!fRemote.size() || !cbk) return false;
 
-      iJobQ.emplace_back("STOR", fRemote, fLocal, nullptr, cbk);
+      iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
+
+      iJobQ.emplace_back("STOR", fRemote, "", nullptr, cbk, nullptr);
 
       ProcessNextJob();
     }
 
-    virtual void Download(TDataCbk cbk, const std::string& fRemote, const std::string& fLocal = "")
+    virtual void Download(TDownloadCbk cbk, const std::string& fRemote)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("PASV", "", "", nullptr, nullptr);
+      iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
 
-      iJobQ.emplace_back("RETR", fRemote, fLocal, nullptr, cbk);
+      iJobQ.emplace_back("RETR", fRemote, "", nullptr, nullptr, cbk);
 
       ProcessNextJob();
     }
 
-    virtual void List(TDataCbk cbk, const std::string& fRemote = "")
+    virtual void List(TDownloadCbk cbk, const std::string& fRemote = "")
     {
       std::lock_guard<std::mutex> lg(iLock);
 
       if (cbk)
       {
-        iJobQ.emplace_back("PASV", "", "", nullptr, nullptr);
+        iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
 
-        iJobQ.emplace_back("LIST", fRemote, "", nullptr, cbk);
+        iJobQ.emplace_back("LIST", fRemote, "", nullptr, nullptr, cbk);
 
         ProcessNextJob();        
       }
@@ -66,7 +69,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("PWD", "", "", cbk, nullptr);
+      iJobQ.emplace_back("PWD", "", "", cbk, nullptr, nullptr);
 
       ProcessNextJob();
     }
@@ -75,7 +78,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("CWD", dir, "", cbk, nullptr);
+      iJobQ.emplace_back("CWD", dir, "", cbk, nullptr, nullptr);
 
       ProcessNextJob();       
     }
@@ -84,7 +87,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("MKD", dir, "", cbk, nullptr);
+      iJobQ.emplace_back("MKD", dir, "", cbk, nullptr, nullptr);
 
       ProcessNextJob();    
     }
@@ -93,7 +96,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("RMD", dir, "", cbk, nullptr);
+      iJobQ.emplace_back("RMD", dir, "", cbk, nullptr, nullptr);
 
       ProcessNextJob();  
     }
@@ -102,14 +105,14 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      iJobQ.emplace_back("QUIT", "", "", cbk, nullptr);
+      iJobQ.emplace_back("QUIT", "", "", cbk, nullptr, nullptr);
 
       ProcessNextJob();       
     }
 
   protected:
 
-    std::string iDirectoryList;
+    bool iContinueDataCbk = false;
 
     SPCDevice iFileDevice = nullptr;
 
@@ -124,8 +127,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
        std::string,      // command
        std::string,      // fRemote
        std::string,      // fLocal
-       TRespCbk,         // resp cbk
-       TDataCbk          // data cbk
+       TRespCbk,         // rcbk
+       TUploadCbk,        // ucbk
+       TDownloadCbk      // dcbk       
     >> iJobQ;
 
     using TStateFn = std::function<void (void)>;
@@ -257,7 +261,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           return;
         }
 
-        auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+        auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
 
         iPendingResponse = 1;
 
@@ -280,13 +284,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void ProcessGenCmdEvent(void)
     {
-      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
 
-      if (cbk)
+      if (rcbk)
       {
         auto& m = iMessages.back();
         std::string res(m.begin(), m.end());
-        cbk(res);
+        rcbk(res);
       }
 
       SkipCommand(1);
@@ -323,21 +327,37 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void ProcessDataCmdResponse(char code = '0')
     {
-      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
 
       switch (code)
       {
         case '1':
         {
-          if (iFileDevice)
+          if (cmd == "STOR")
           {
-            iFileDevice->Read(nullptr, 0, 0);
+            if (ucbk)
+            {
+              uint8_t *b = nullptr;
+              size_t n = 0;
+
+              iContinueDataCbk = ucbk((char **)&b, &n);
+
+              if (b && n)
+              {
+                iDataChannel->Write(b, n);
+              }
+            }
+            else if (iFileDevice)
+            {
+              iFileDevice->Read(nullptr, 0, 0);
+            }
+          }
+          else
+          {
+            iContinueDataCbk = true;
           }
 
-          if (IsTransferCommand(cmd))
-          {
-            iDataChannel->Read();
-          }
+          iDataChannel->Read();
 
           break;
         }
@@ -389,10 +409,12 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnDataChannelConnect(void)
     {
-      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
 
-      if (cmd == "STOR")
+      if (cmd == "STOR" && !ucbk)
       {
+        assert(fLocal.size());
+
         iFileDevice = std::make_shared<CDevice>(fLocal.c_str());
 
         auto observer = std::make_shared<CListener>(
@@ -418,21 +440,42 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnDataChannelRead(const uint8_t *b, size_t n)
     {
-      auto& [cmd, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
 
-      if (IsTransferCommand(cmd))
+      if (iContinueDataCbk)
       {
-        dcbk((char *)b, n);
+        iContinueDataCbk = dcbk((char *)b, n);
       }
     }
 
     virtual void OnDataChannelWrite(const uint8_t *b, size_t n)
     {
-      auto& [command, fRemote, fLocal, cbk, dcbk] = iJobQ.front();
+      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
+
+      if (iContinueDataCbk)
+      {
+        iContinueDataCbk = ucbk((char **)&b, &n);
+
+        if (b && n)
+        {
+          iDataChannel->Write(b, n);
+        }
+      }
+      else
+      {
+        iDataChannel->Shutdown();
+      }
     }
 
     virtual void OnDataChannelDisconnect(void)
     {
+      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
+
+      if (dcbk)
+      {
+        dcbk(nullptr, 0);
+      }
+
       ProcessDataCmdResponse();
     }
 

@@ -16,21 +16,25 @@ int main(void)
      list.append(std::string(b, n));
     else
      std::cout << list;
+    return true;
   });
 
   ftp->SetCurrentDir([](const std::string& resp) {
     std::cout << resp << "\n";
   }, "vcpkg");
 
-  // ftp->Upload([](uint8_t *b, size_t n) {
-    
-  // },"y.txt", "C:\\x.txt");
+  ftp->Upload([](char **b, size_t *n) {
+    *b = "This is file data.";
+    *n = strlen("This is file data.");
+    return false;
+  }, "y.txt");
 
   ftp->Download([](char *b, size_t n) {
     if (b)
       std::cout << std::string(b, n);
     else
       std::cout << "Download completed\n";
+    return true;
   }, "bootstrap-vcpkg.bat");
 
   ftp->Quit([](const std::string& resp) {
