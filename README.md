@@ -49,7 +49,7 @@ int main(void)
   });
 
   /**
-   * Sets the current directory
+   * Set the current directory
    */
   ftp->SetCurrentDir("vcpkg");
 
@@ -57,8 +57,7 @@ int main(void)
    * File download. Similar to the "List" API. 
    * The lambda argument is an output callback which is invoked multiple times 
    * with chunks of directory list data. A null "b" (buffer) pointer indicates 
-   * that there's no more file data. Returning false from this callback to trigger 
-   * a premature termination of the download.
+   * that there's no more data.
    */
   ftp->Download([](char *b, size_t n) {
     if (b)
@@ -70,8 +69,9 @@ int main(void)
 
   /**
    * File upload. The lambda argument is an input callback which is invoked
-   * multiple times with chunks of file data. Returning false from this callback 
-   * completes the file upload indicating that there is no more file data to be uploded.
+   * multiple times with chunks of file data. Returning false from this
+   * callback indicates that there is no more file data to be uploded. Return
+   * true for recieving subsequent callbacks
    */
   ftp->Upload([](char **b, size_t *n) {
     *b = "This is file data.";
@@ -80,7 +80,7 @@ int main(void)
   }, "y.txt");
 
   /**
-   * Gets the current directory
+   * Get the current directory
    */
   ftp->GetCurrentDir([](const std::string& resp) {
     /**
