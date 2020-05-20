@@ -27,11 +27,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual ~CProtocolFTP() {}
 
-    virtual bool Upload(TUploadCbk cbk, const std::string& fRemote)
+    virtual void Upload(TUploadCbk cbk, const std::string& fRemote)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      if (!fRemote.size() || !cbk) return false;
+      if (!fRemote.size() || !cbk) return;
 
       iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
 
@@ -43,6 +43,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     virtual void Download(TDownloadCbk cbk, const std::string& fRemote)
     {
       std::lock_guard<std::mutex> lg(iLock);
+
+      if (!fRemote.size() || !cbk) return;
 
       iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
 
@@ -65,7 +67,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       }
     }
 
-    virtual void GetCurrentDir(TRespCbk cbk)
+    virtual void GetCurrentDir(TRespCbk cbk = nullptr)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -74,7 +76,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual void SetCurrentDir(TRespCbk cbk, const std::string& dir)
+    virtual void SetCurrentDir(const std::string& dir, TRespCbk cbk = nullptr)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -83,7 +85,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();       
     }
 
-    virtual void CreateDir(TRespCbk cbk, const std::string& dir)
+    virtual void CreateDir(const std::string& dir, TRespCbk cbk)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -92,7 +94,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();    
     }
 
-    virtual void RemoveDir(TRespCbk cbk, const std::string& dir)
+    virtual void RemoveDir(const std::string& dir, TRespCbk cbk)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -101,7 +103,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();  
     }
 
-    virtual void Quit(TRespCbk cbk)
+    virtual void Quit(TRespCbk cbk = nullptr)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -179,12 +181,12 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void StateMachine(const std::vector<uint8_t>& msg) override
     {
-      std::cout << "\n";
-
       for (size_t i = 0; i < msg.size(); i++)
       {
         std::cout << msg[i];
       }
+
+      std::cout << "\n";
 
       for (int i = 0; i < sizeof(FSM) / sizeof(FSM[0]); i++)
       {
@@ -479,18 +481,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessDataCmdResponse();
     }
 
-    virtual void OnConnect(void) override
-    {
-      CProtocol::OnConnect();
-
-      auto cc = iTarget.lock();
-
-      if (cc)
-      {
-        cc->Read();
-      }
-    }
-
     virtual void ProcessLoginEvent(bool status = false)
     {
       iJobInProgress.clear();
@@ -513,6 +503,17 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         cmd == "STOR");
     }
 
+    virtual void OnConnect(void) override
+    {
+      CProtocol::OnConnect();
+
+      auto cc = iTarget.lock();
+
+      if (cc)
+      {
+        cc->Read();
+      }
+    }
 };
 
 using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;

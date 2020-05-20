@@ -145,10 +145,10 @@ class CDeviceSocket : public CDevice
 
     virtual void OnConnect() override
     {
+      CDevice::OnConnect();
       #ifdef WIN32
       setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
-      #endif
-      CDevice::OnConnect();
+      #endif      
     }
 
     virtual void OnRead(const uint8_t *b, size_t n) override

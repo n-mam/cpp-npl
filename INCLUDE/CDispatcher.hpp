@@ -198,7 +198,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         free(ctx);
       }
-      std::cout << "Dispatcher thread returning\n";
+
+      std::cout << "Dispatcher thread returning. Observers : " << iObservers.size() << "\n";
     }    
 };
 

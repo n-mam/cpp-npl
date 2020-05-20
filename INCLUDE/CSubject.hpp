@@ -84,6 +84,8 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       std::lock_guard<std::mutex> lg(iLock);
       iConnected = false;
       NotifyDisconnect();
+      MarkRemoveAllListeners();
+      MarkRemoveSelfAsListener();  
     }
 
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)
@@ -159,19 +161,19 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
   protected:
 
-    std::string iName = "Subject";
-
     std::mutex iLock;
 
     WPCSubject iTarget;
 
     bool iConnected = false;
 
-    std::vector<SPCSubject> iObservers;
+    std::string iName = "Subject";
 
     bool iMarkRemoveAllListeners = false;
 
     bool iMarkRemoveSelfAsListener = false;
+
+    std::vector<SPCSubject> iObservers;
 
     virtual void ProcessMarkRemoveAllListeners(void)
     {

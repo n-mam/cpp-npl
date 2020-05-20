@@ -19,9 +19,7 @@ int main(void)
     return true;
   });
 
-  ftp->SetCurrentDir([](const std::string& resp) {
-    std::cout << resp << "\n";
-  }, "vcpkg");
+  ftp->SetCurrentDir("vcpkg");
 
   ftp->Upload([](char **b, size_t *n) {
     *b = "This is file data.";
@@ -37,9 +35,7 @@ int main(void)
     return true;
   }, "bootstrap-vcpkg.bat");
 
-  ftp->Quit([](const std::string& resp) {
-    std::cout << resp << "\n";
-  });
+  ftp->Quit();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(15000));
 
