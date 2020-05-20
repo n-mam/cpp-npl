@@ -388,6 +388,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       iDataChannel = std::make_shared<CDeviceSocket>();
 
+      iDataChannel->SetName("dc");
+
       auto observer = std::make_shared<CListener>(
         [this]() {
           OnDataChannelConnect();
@@ -401,6 +403,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         [this](){
           OnDataChannelDisconnect();
         });
+
+      observer->SetName("Observer");
 
       auto D = GetDispatcher();
 

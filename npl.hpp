@@ -11,6 +11,10 @@ namespace npl
     auto cc = std::make_shared<CDeviceSocket>();
     auto ftp = std::make_shared<CProtocolFTP>();    
 
+    cc->SetName("cc");
+
+    ftp->SetName("ftp");
+
     D->AddEventListener(cc)->AddEventListener(ftp);
 
     ftp->SetCredentials(username, password);

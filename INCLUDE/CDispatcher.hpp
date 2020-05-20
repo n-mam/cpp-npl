@@ -28,6 +28,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       {
         iWorker = std::thread(&CDispatcher::Worker, this);
       }
+
+      iName = "D";
     }
 
     ~CDispatcher()
@@ -132,24 +134,22 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         #else
 
-          LPOVERLAPPED o;
-          ULONG_PTR k;
+        LPOVERLAPPED o;
+        ULONG_PTR k;
 
-          bool fRet = GetQueuedCompletionStatus(iEventPort, &n, &k, &o, INFINITE);
+        bool fRet = GetQueuedCompletionStatus(iEventPort, &n, &k, &o, INFINITE);
 
-          //std::cout << "\n" << (void *)k << " fRet " << fRet << ", n " << n << "\n";
+        if (!fRet)
+        {
+          std::cout << "\n" << (void *)k  << " GQCS failed : " << GetLastError() << "\n";
+        }
 
-          if (!fRet)
-          {
-            std::cout << "\n" << (void *)k  << " GQCS failed : " << GetLastError() << "\n";
-          }
+        if (n == 0 && k == 0 && o == 0)
+        {
+          break;
+        }
 
-          if (n == 0 && k == 0 && o == 0)
-          {
-            break;
-          }
-
-          ctx = (Context *) o;
+        ctx = (Context *) o;
 
         #endif
 
@@ -161,6 +161,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         {
           if ((void *)o.get() == (void *)k)
           {
+            //std::cout << "\n" << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << n << "\n";            
+            
             ul.unlock();
 
             if (ctx->type == EIOTYPE::READ)
