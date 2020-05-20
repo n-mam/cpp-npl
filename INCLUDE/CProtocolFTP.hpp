@@ -335,6 +335,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         case '1':
         {
+          iContinueDataCbk = true;
+
           if (cmd == "STOR")
           {
             if (ucbk)
@@ -451,6 +453,10 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       if (iContinueDataCbk)
       {
         iContinueDataCbk = dcbk((char *)b, n);
+      }
+      else
+      {
+        iDataChannel->Shutdown();
       }
     }
 
