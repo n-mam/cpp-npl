@@ -16,9 +16,26 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual ~CProtocol() {}
 
-    virtual void Start(void)
+    virtual void StartProtocol(bool client = true)
     {
+      auto sub = iTarget.lock();
 
+      if (sub)
+      {
+        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(sub);
+
+        if (sock)
+        {
+          if (client)
+          {
+            sock->StartSocketClient();
+          }
+          else
+          {
+            sock->StartSocketServer();
+          }
+        }
+      }
     }
 
     virtual size_t GetMessageCount(void)
@@ -39,6 +56,7 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void Stop(void)
     {
+
     }
 
     virtual void OnConnect(void) override
@@ -85,12 +103,13 @@ class CProtocol : public CSubject<T1, T2>
       }
     }
 
+    std::string iUserName;
+
+    std::string iPassword;
+
     std::vector<T1> iBuffer;
 
     std::vector<std::vector<T2>> iMessages;
-
-    std::string iUserName;
-    std::string iPassword;
 
     TProtocolEventCbk iEventCallback = nullptr;
 

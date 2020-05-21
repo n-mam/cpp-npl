@@ -5,10 +5,20 @@
 int main(void)
 {
   /**
-   * Create "ftp" object. This would asynchronously
+   * Create an FTP object.
+   */
+  auto ftp = NPL::make_ftp("127.0.0.1", 21, NPL::ESSL::None);
+
+  /**
+   * Set the login credentials.
+   */
+  ftp->SetCredentials("anonymous", "welcome123");
+
+  /**
+   * Start the protocol(FTP). This would asynchronously
    * trigger the connect and login sequence.
    */
-  auto ftp = npl::make_ftp("127.0.0.1", 21, "anonymous", "welcome123");
+  ftp->StartProtocol();
 
   /**
    * Directory listing. The lambda argument is an output callback 

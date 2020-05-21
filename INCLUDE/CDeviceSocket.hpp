@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+#include <openssl/ssl.h>
+
 class CDeviceSocket : public CDevice
 {
   public:
@@ -26,10 +28,9 @@ class CDeviceSocket : public CDevice
       shutdown((SOCKET)iFD, 1);      
     }
 
-    void StartSocketClient(std::string host, int port)
+    void StartSocketClient(void)
     {
-      iHost = host;
-      iPort = port;
+      assert(iHost.size() && iPort);
 
       #ifdef linux
 
@@ -93,9 +94,9 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
-    void StartSocketServer(int port)
+    void StartSocketServer(void)
     {
-      iPort = port;
+      assert(iPort);
 
       sockaddr_in sa;
 
@@ -143,6 +144,41 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
+    void InitializeSSL(void)
+    {
+      ctx = SSL_CTX_new(TLSv1_2_client_method());
+      ssl = SSL_new(ctx);
+      rbio = BIO_new(BIO_s_mem());
+      wbio = BIO_new(BIO_s_mem());
+      SSL_set_bio(ssl, rbio, wbio);
+
+      if (IsClientSocket())
+      {
+        SSL_set_connect_state(ssl);
+        SSL_do_handshake(ssl);
+      }
+      else
+      {
+        SSL_set_accept_state(ssl);
+      }
+    }
+
+    bool IsClientSocket(void)
+    {
+      bool fRet = false;
+      if (iHost.size() && iPort)
+      {
+        fRet = true;
+      }
+      return fRet;
+    }
+
+    void SetHostAndPort(const std::string& aHostname, int aPort)
+    {
+      iHost = aHostname;
+      iPort = aPort;
+    }
+
     virtual void OnConnect() override
     {
       CDevice::OnConnect();
@@ -171,6 +207,11 @@ class CDeviceSocket : public CDevice
 
     std::string iHost = "";
 
+    SSL_CTX * ctx;
+    SSL * ssl;
+    BIO * rbio;
+    BIO * wbio;
+
     #ifdef WIN32
     void * GetExtentionPfn(GUID guid, FD fd)
     {
@@ -189,7 +230,6 @@ class CDeviceSocket : public CDevice
       return pfn;
     }
     #endif
-
 };
 
 using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;

@@ -12,6 +12,15 @@
 #include <cstring>
 #include <functional>
 
+namespace NPL {
+
+enum class ESSL : uint8_t
+{
+  None = 0,
+  Implicit,
+  Explicit
+};
+
 using TUploadCbk = std::function<bool (char **, size_t *)>;
 using TDownloadCbk = std::function<bool (char *, size_t)>;
 using TRespCbk = std::function<void (const std::string&)>;
@@ -112,7 +121,14 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();       
     }
 
+    virtual void SetFTPSType(ESSL ftps)
+    {
+      iSSLType = ftps;
+    }
+
   protected:
+
+    ESSL iSSLType = ESSL::None;
 
     bool iContinueDataCbk = false;
 
@@ -412,7 +428,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       D->AddEventListener(iDataChannel)->AddEventListener(observer);
 
-      iDataChannel->StartSocketClient(host, port);
+      iDataChannel->SetHostAndPort(host, port);
+
+      iDataChannel->StartSocketClient();
     }
 
     virtual void OnDataChannelConnect(void)
@@ -521,11 +539,21 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       if (cc)
       {
-        cc->Read();
+        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(cc);
+
+        if (iSSLType == ESSL::Implicit)
+        {
+          sock->InitializeSSL();
+        }
+        else
+        {
+          sock->Read();
+        }
       }
     }
 };
 
 using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;
 
+} //npl namespace
 #endif //FTPSEGMENTER_HPP
