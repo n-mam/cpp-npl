@@ -7,6 +7,7 @@
 #include <string>
 
 #include <openssl/ssl.h>
+#include <openssl/err.h>
 
 class CDeviceSocket : public CDevice
 {
@@ -144,32 +145,15 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
-    void InitializeSSL(void)
-    {
-      ctx = SSL_CTX_new(TLSv1_2_client_method());
-      ssl = SSL_new(ctx);
-      rbio = BIO_new(BIO_s_mem());
-      wbio = BIO_new(BIO_s_mem());
-      SSL_set_bio(ssl, rbio, wbio);
-
-      if (IsClientSocket())
-      {
-        SSL_set_connect_state(ssl);
-        SSL_do_handshake(ssl);
-      }
-      else
-      {
-        SSL_set_accept_state(ssl);
-      }
-    }
-
     bool IsClientSocket(void)
     {
       bool fRet = false;
+
       if (iHost.size() && iPort)
       {
         fRet = true;
       }
+
       return fRet;
     }
 
@@ -193,12 +177,103 @@ class CDeviceSocket : public CDevice
 
       CDevice::Read();
 
+      if (ssl)
+      {
+        BIO_write(rbio, b, n);
+
+        int rc;
+
+        if (!iHandshakeDone)
+        {
+          rc = SSL_do_handshake(ssl);
+          
+          if (rc == 1)
+          {
+            iHandshakeDone = true;
+          }
+        }
+
+        if (iHandshakeDone)
+        {
+          rc = SSL_read(ssl, iRBuf, 1024);
+        }
+
+        UpdateWBIO();
+
+        if (rc <= 0)
+        {
+          return;
+        }
+        else
+        {
+          b = iRBuf, n = rc;
+        }
+      }
+
       CDevice::OnRead(b, n);
     }
 
     virtual void OnWrite(const uint8_t *b, size_t n) override
     {
+      if (ssl)
+      {
+        if (!iHandshakeDone)
+        {
+          SSL_do_handshake(ssl);
+          return;
+        }
+      }
+
       CDevice::OnWrite(b, n);
+    }
+
+    virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    {
+      if(ssl)
+      {
+
+      }
+      else
+      {
+        CDevice::Write();
+      }
+    }
+
+    void UpdateWBIO()
+    {
+      int wp = BIO_pending(wbio);
+
+      uint8_t buf[1024];
+
+      if (wp)
+      {
+        int rc = BIO_read(wbio, buf, wp);
+
+        Write(buf, wp);
+      }
+    }
+
+    void InitializeSSL(void)
+    {
+      ctx = SSL_CTX_new(TLSv1_2_client_method());
+      SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);      
+      ssl = SSL_new(ctx);
+      rbio = BIO_new(BIO_s_mem());
+      wbio = BIO_new(BIO_s_mem());
+      SSL_set_bio(ssl, rbio, wbio);
+
+      if (IsClientSocket())
+      {
+        SSL_set_connect_state(ssl);
+
+        SSL_do_handshake(ssl);
+
+        UpdateWBIO();
+      }
+      else
+      {
+        SSL_set_accept_state(ssl);
+      }
     }
 
   private:
@@ -207,10 +282,19 @@ class CDeviceSocket : public CDevice
 
     std::string iHost = "";
 
-    SSL_CTX * ctx;
-    SSL * ssl;
-    BIO * rbio;
-    BIO * wbio;
+    SSL_CTX * ctx = nullptr;
+
+    SSL * ssl = nullptr;
+
+    BIO * rbio = nullptr;
+
+    BIO * wbio = nullptr;
+
+    bool iHandshakeDone = false;
+
+    uint8_t iRBuf[1024];
+
+    uint8_t iWBuf[1024];
 
     #ifdef WIN32
     void * GetExtentionPfn(GUID guid, FD fd)

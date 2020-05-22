@@ -111,11 +111,6 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
         (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-        for (int i = 0; i < l; i++)
-        {
-          std::cout << b[i];
-        }
-
         WriteFile(iFD, (LPVOID) b, l, &ctx->n, &ctx->ol);
 
         #endif

@@ -249,6 +249,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     virtual void SendCommand(const std::string& c, const std::string& arg = "")
     {
       auto cmd = c + " " + arg + "\r\n";
+      std::cout << cmd;
       Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
     }
 
@@ -525,15 +526,16 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual bool IsTransferCommand(const std::string& cmd)
     {
-      return (
-        cmd == "RETR" || 
-        cmd == "LIST" ||
-        cmd == "STOR");
+      return (cmd == "RETR" || 
+              cmd == "LIST" ||
+              cmd == "STOR");
     }
 
     virtual void OnConnect(void) override
     {
       CProtocol::OnConnect();
+
+      Read();
 
       auto cc = iTarget.lock();
 
@@ -544,10 +546,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         if (iSSLType == ESSL::Implicit)
         {
           sock->InitializeSSL();
-        }
-        else
-        {
-          sock->Read();
         }
       }
     }
