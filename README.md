@@ -14,6 +14,10 @@ C++17 network protocol library
 Build
 
 ```sh
+Install openssl using vcpkg
+https://github.com/Microsoft/vcpkg
+```
+```sh
 mkdir build
 cd build
 cmake ..

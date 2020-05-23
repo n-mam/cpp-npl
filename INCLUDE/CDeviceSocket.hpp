@@ -231,7 +231,9 @@ class CDeviceSocket : public CDevice
     {
       if(ssl)
       {
+        int rc = SSL_write(ssl, b, l);
 
+        UpdateWBIO();
       }
       else
       {
@@ -241,15 +243,15 @@ class CDeviceSocket : public CDevice
 
     void UpdateWBIO()
     {
-      int wp = BIO_pending(wbio);
+      int l = BIO_pending(wbio);
 
       uint8_t buf[1024];
 
-      if (wp)
+      if (l)
       {
-        int rc = BIO_read(wbio, buf, wp);
+        int rc = BIO_read(wbio, buf, l);
 
-        Write(buf, wp);
+        CDevice::Write(buf, l);
       }
     }
 
