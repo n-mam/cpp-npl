@@ -9,7 +9,6 @@
 #include <atomic>
 #include <vector>
 #include <string>
-#include <cstring>
 #include <functional>
 
 namespace NPL {
@@ -19,6 +18,12 @@ enum class ESSL : uint8_t
   None = 0,
   Implicit,
   Explicit
+};
+
+enum class EDCProt : uint8_t
+{
+  Clear = 0,
+  Protected
 };
 
 using TUploadCbk = std::function<bool (char **, size_t *)>;
@@ -36,11 +41,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual ~CProtocolFTP() {}
 
-    virtual void Upload(TUploadCbk cbk, const std::string& fRemote)
+    virtual void Upload(TUploadCbk cbk, const std::string& fRemote, EDCProt P = EDCProt::Clear)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
       if (!fRemote.size() || !cbk) return;
+
+      SetDCProtLevel(P);
 
       iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
 
@@ -49,11 +56,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual void Download(TDownloadCbk cbk, const std::string& fRemote)
+    virtual void Download(TDownloadCbk cbk, const std::string& fRemote, EDCProt P = EDCProt::Clear)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
       if (!fRemote.size() || !cbk) return;
+
+      SetDCProtLevel(P);
 
       iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
 
@@ -62,18 +71,19 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual void List(TDownloadCbk cbk, const std::string& fRemote = "")
+    virtual void List(TDownloadCbk cbk, const std::string& fRemote = "", EDCProt P = EDCProt::Clear)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      if (cbk)
-      {
-        iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
+      if (!cbk) return;
 
-        iJobQ.emplace_back("LIST", fRemote, "", nullptr, nullptr, cbk);
+      SetDCProtLevel(P);
 
-        ProcessNextJob();        
-      }
+      iJobQ.emplace_back("PASV", "", "", nullptr, nullptr, nullptr);
+
+      iJobQ.emplace_back("LIST", fRemote, "", nullptr, nullptr, cbk);
+
+      ProcessNextJob();        
     }
 
     virtual void GetCurrentDir(TRespCbk cbk = nullptr)
@@ -130,6 +140,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     ESSL iSSLType = ESSL::None;
 
+    EDCProt iDCProt = EDCProt::Clear;
+
     bool iContinueDataCbk = false;
 
     SPCDevice iFileDevice = nullptr;
@@ -146,8 +158,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
        std::string,      // fRemote
        std::string,      // fLocal
        TRespCbk,         // rcbk
-       TUploadCbk,        // ucbk
-       TDownloadCbk      // dcbk       
+       TUploadCbk,       // ucbk
+       TDownloadCbk      // dcbk
     >> iJobQ;
 
     using TStateFn = std::function<void (void)>;
@@ -173,11 +185,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       { "USER"      , '4', "USER",       [this](){ }                                    },
       { "USER"      , '5', "USER",       [this](){ }                                    },
       // PASS states
-      { "PASS"      , '1', "USER",       [this]() { ProcessLoginEvent(); }          },
+      { "PASS"      , '1', "USER",       [this]() { ProcessLoginEvent(false); }          },
       { "PASS"      , '2', "READY" ,     [this]() { ProcessLoginEvent(true); }          },
       { "PASS"      , '3', "ACCT" ,      [this]() { SendCommand("ACCT");}               },
-      { "PASS"      , '4', "USER",       [this]() { ProcessLoginEvent(); }          },
-      { "PASS"      , '5', "USER",       [this]() { ProcessLoginEvent(); }          },
+      { "PASS"      , '4', "USER",       [this]() { ProcessLoginEvent(false); }          },
+      { "PASS"      , '5', "USER",       [this]() { ProcessLoginEvent(false); }          },
       // PASV states
       { "PASV"      , '1', "DATA"  ,     [this]() { SkipCommand(2);        }            },      
       { "PASV"      , '2', "DATA"  ,     [this]() { ProcessPasvResponse(); }            },
@@ -251,6 +263,19 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       auto cmd = c + " " + arg + "\r\n";
       std::cout << cmd;
       Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
+    }
+
+    virtual void SetDCProtLevel(EDCProt P)
+    {
+      if (iSSLType == ESSL::Implicit || 
+          iSSLType == ESSL::Explicit)
+      {
+        iJobQ.emplace_back("PBSZ", "0", "", nullptr, nullptr, nullptr);
+
+        auto level = (P == EDCProt::Clear) ? "C" : "P";
+
+        iJobQ.emplace_back("PROT", level, "", nullptr, nullptr, nullptr);
+      }
     }
 
     virtual void SkipCommand(int count = 1)
@@ -346,39 +371,24 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void ProcessDataCmdResponse(char code = '0')
     {
-      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
+      bool abort = false;
 
       switch (code)
       {
         case '1':
         {
-          iContinueDataCbk = true;
+          iDataChannel->Read();          
 
-          if (cmd == "STOR")
+          if (iDCProt == EDCProt::Protected)
           {
-            if (ucbk)
-            {
-              uint8_t *b = nullptr;
-              size_t n = 0;
-
-              iContinueDataCbk = ucbk((char **)&b, &n);
-
-              if (b && n)
-              {
-                iDataChannel->Write(b, n);
-              }
-            }
-            else if (iFileDevice)
-            {
-              iFileDevice->Read(nullptr, 0, 0);
-            }
+            iDataChannel->InitializeSSL([this](){
+              StartDataTransfer();
+            });
           }
           else
           {
-            iContinueDataCbk = true;
+            StartDataTransfer();
           }
-
-          iDataChannel->Read();
 
           break;
         }
@@ -387,15 +397,28 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         case '5':
         {
           iPendingResponse--;
+
+          if (!IsResponsePositive(code))
+          {
+            abort = true;
+          }
+
           break;
         }
       }
 
-      if (!iPendingResponse && !iDataChannel->IsConnected())
+      if (!iPendingResponse && (!iDataChannel->IsConnected() || abort))
       {
         ResetDataChannel();
 
-        iJobQ.pop_front();
+        if (abort)
+        {
+          iJobQ.clear();
+        }
+        else
+        {
+          iJobQ.pop_front();
+        }
 
         iJobInProgress.clear();
 
@@ -510,11 +533,51 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessDataCmdResponse();
     }
 
-    virtual void ProcessLoginEvent(bool status = false)
+    virtual void StartDataTransfer(void)
     {
-      iJobInProgress.clear();
-      NotifyState("PASS", 'S');
-      ProcessNextJob();
+      auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
+            
+      iContinueDataCbk = true;
+
+      if (cmd == "STOR")
+      {
+        if (ucbk)
+        {
+          uint8_t *b = nullptr;
+          size_t n = 0;
+
+          iContinueDataCbk = ucbk((char **)&b, &n);
+
+          if (b && n)
+          {
+            iDataChannel->Write(b, n);
+          }
+        }
+        else if (iFileDevice)
+        {
+          iFileDevice->Read(nullptr, 0, 0);
+        }
+      }
+      else
+      {
+        iContinueDataCbk = true;
+      }
+    }
+
+    virtual void ProcessLoginEvent(bool status)
+    {
+      if (status)
+      {
+        NotifyState("PASS", 'S');
+        iJobInProgress.clear();     
+        ProcessNextJob();
+      }
+      else
+      {
+        NotifyState("PASS", 'F');
+        iJobQ.clear();
+        iJobInProgress.clear();     
+      }      
     }
 
     virtual void ResetDataChannel(void)
@@ -529,6 +592,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       return (cmd == "RETR" || 
               cmd == "LIST" ||
               cmd == "STOR");
+    }
+
+    virtual bool IsResponsePositive(char c)
+    {
+      return (c == '2');
     }
 
     virtual void OnConnect(void) override

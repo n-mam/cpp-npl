@@ -51,7 +51,7 @@ int main(void)
     else
       std::cout << "Download completed\n";
     return true;
-  }, "bootstrap-vcpkg.bat");
+  }, "bootstrap-vcpkg.bat", NPL::EDCProt::Protected);
 
   /**
    * File upload. The lambda argument is an input callback which is invoked
@@ -63,7 +63,7 @@ int main(void)
     *b = "This is file data.";
     *n = strlen("This is file data.");
     return false;
-  }, "y.txt");
+  }, "y.txt", NPL::EDCProt::Protected);
 
   /**
    * Get the current directory

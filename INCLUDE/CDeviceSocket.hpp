@@ -9,6 +9,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+using TOnHandshake = std::function<void (void)>;
+
 class CDeviceSocket : public CDevice
 {
   public:
@@ -163,6 +165,44 @@ class CDeviceSocket : public CDevice
       iPort = aPort;
     }
 
+    void UpdateWBIO()
+    {
+      int l = BIO_pending(wbio);
+
+      uint8_t buf[1024];
+
+      if (l)
+      {
+        int rc = BIO_read(wbio, buf, l);
+
+        CDevice::Write(buf, l);
+      }
+    }
+
+    void InitializeSSL(TOnHandshake cbk = nullptr)
+    {
+      iOnHandShakeSuccessful = cbk;
+      ctx = SSL_CTX_new(TLSv1_2_client_method());
+      SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);      
+      ssl = SSL_new(ctx);
+      rbio = BIO_new(BIO_s_mem());
+      wbio = BIO_new(BIO_s_mem());
+      SSL_set_bio(ssl, rbio, wbio);
+
+      if (IsClientSocket())
+      {
+        SSL_set_connect_state(ssl);
+
+        SSL_do_handshake(ssl);
+
+        UpdateWBIO();
+      }
+      else
+      {
+        SSL_set_accept_state(ssl);
+      }
+    }
+
     virtual void OnConnect() override
     {
       CDevice::OnConnect();
@@ -190,6 +230,7 @@ class CDeviceSocket : public CDevice
           if (rc == 1)
           {
             iHandshakeDone = true;
+            iOnHandShakeSuccessful();
           }
         }
 
@@ -241,48 +282,13 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    void UpdateWBIO()
-    {
-      int l = BIO_pending(wbio);
-
-      uint8_t buf[1024];
-
-      if (l)
-      {
-        int rc = BIO_read(wbio, buf, l);
-
-        CDevice::Write(buf, l);
-      }
-    }
-
-    void InitializeSSL(void)
-    {
-      ctx = SSL_CTX_new(TLSv1_2_client_method());
-      SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);      
-      ssl = SSL_new(ctx);
-      rbio = BIO_new(BIO_s_mem());
-      wbio = BIO_new(BIO_s_mem());
-      SSL_set_bio(ssl, rbio, wbio);
-
-      if (IsClientSocket())
-      {
-        SSL_set_connect_state(ssl);
-
-        SSL_do_handshake(ssl);
-
-        UpdateWBIO();
-      }
-      else
-      {
-        SSL_set_accept_state(ssl);
-      }
-    }
-
   private:
 
     int iPort = 0;
 
     std::string iHost = "";
+
+    TOnHandshake iOnHandShakeSuccessful = nullptr;
 
     SSL_CTX * ctx = nullptr;
 
