@@ -140,7 +140,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     ESSL iSSLType = ESSL::None;
 
-    EDCProt iDCProt = EDCProt::Clear;
+    EDCProt iDCProtection = EDCProt::Clear;
 
     bool iContinueDataCbk = false;
 
@@ -274,7 +274,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
         auto level = (P == EDCProt::Clear) ? "C" : "P";
 
-        iJobQ.emplace_back("PROT", level, "", nullptr, nullptr, nullptr);
+        iJobQ.emplace_back("PROT", level, "", 
+          [this, lvl = level](const std::string& res){
+            if (res[0] == '2')
+            {
+              iDCProtection = (lvl == "C") ? EDCProt::Clear : EDCProt::Protected;
+            }
+          }, nullptr, nullptr);
       }
     }
 
@@ -379,7 +385,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         {
           iDataChannel->Read();          
 
-          if (iDCProt == EDCProt::Protected)
+          if (iDCProtection == EDCProt::Protected)
           {
             iDataChannel->InitializeSSL([this](){
               StartDataTransfer();
@@ -536,7 +542,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     virtual void StartDataTransfer(void)
     {
       auto& [cmd, fRemote, fLocal, rcbk, ucbk, dcbk] = iJobQ.front();
-            
+
       iContinueDataCbk = true;
 
       if (cmd == "STOR")

@@ -230,7 +230,11 @@ class CDeviceSocket : public CDevice
           if (rc == 1)
           {
             iHandshakeDone = true;
-            iOnHandShakeSuccessful();
+
+            if (iOnHandShakeSuccessful)
+            {
+              iOnHandShakeSuccessful();
+            }
           }
         }
 
