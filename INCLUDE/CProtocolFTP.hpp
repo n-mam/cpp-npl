@@ -74,7 +74,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       std::lock_guard<std::mutex> lg(iLock);
 
-      if (!cbk) return;
+      if (!cbk) assert(false);
 
       SetDCProtLevel(P);
 

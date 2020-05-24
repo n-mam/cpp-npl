@@ -15,8 +15,8 @@ int main(void)
   ftp->SetCredentials("anonymous", "welcome123");
 
   /**
-   * Start the protocol(FTP). This would asynchronously
-   * trigger the connect and login sequence.
+   * Start the protocol. This would asynchronously
+   * trigger connect and the login sequence
    */
   ftp->StartProtocol();
 
@@ -45,7 +45,8 @@ int main(void)
    * The lambda argument is an output callback which is invoked multiple 
    * times with chunks of file data. A null "b" (buffer) pointer indicates 
    * that there's no more file data to download. Returning false at any point
-   * terminates the transfer. local file arg is optional.
+   * terminates the transfer. local file arg is optional; if not specified then 
+   * downloded data can only be accesed via the callback.
    */
   ftp->Download([](const char *b, size_t n) {
     if (b)
