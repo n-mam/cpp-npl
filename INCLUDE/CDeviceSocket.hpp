@@ -28,6 +28,11 @@ class CDeviceSocket : public CDevice
 
     void Shutdown(void)
     {
+      if (ssl)
+      {
+        SSL_shutdown(ssl);
+        UpdateWBIO();
+      }
       shutdown((SOCKET)iFD, 1);      
     }
 
@@ -206,9 +211,10 @@ class CDeviceSocket : public CDevice
     virtual void OnConnect() override
     {
       CDevice::OnConnect();
+      Read();
       #ifdef WIN32
        setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
-      #endif      
+      #endif
     }
 
     virtual void OnRead(const uint8_t *b, size_t n) override
@@ -274,10 +280,9 @@ class CDeviceSocket : public CDevice
 
     virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
-      if(ssl)
+      if (ssl)
       {
-        int rc = SSL_write(ssl, b, l);
-
+        SSL_write(ssl, b, l);
         UpdateWBIO();
       }
       else
@@ -294,13 +299,13 @@ class CDeviceSocket : public CDevice
 
     TOnHandshake iOnHandShakeSuccessful = nullptr;
 
-    SSL_CTX * ctx = nullptr;
+    SSL_CTX *ctx = nullptr;
 
-    SSL * ssl = nullptr;
+    SSL *ssl = nullptr;
 
-    BIO * rbio = nullptr;
+    BIO *rbio = nullptr;
 
-    BIO * wbio = nullptr;
+    BIO *wbio = nullptr;
 
     bool iHandshakeDone = false;
 

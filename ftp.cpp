@@ -23,10 +23,11 @@ int main(void)
   /**
    * Directory listing. The lambda argument is an output callback 
    * which is invoked multiple times with chunks of directory list
-   * data. A null "b" (buffer) pointer indicates that there's no more data.
+   * data. A null "b" (buffer) pointer indicates that there's no 
+   * more data. Returning false at any point terminates the transfer.
    */
   std::string list;
-  ftp->List([&](char *b, size_t n) {
+  ftp->List([&](const char *b, size_t n) {
     if (b)
      list.append(std::string(b, n));
     else
@@ -41,29 +42,28 @@ int main(void)
 
   /**
    * File download. Similar to the "List" API. 
-   * The lambda argument is an output callback which is invoked multiple times 
-   * with chunks of directory list data. A null "b" (buffer) pointer indicates 
-   * that there's no more data.
+   * The lambda argument is an output callback which is invoked multiple 
+   * times with chunks of file data. A null "b" (buffer) pointer indicates 
+   * that there's no more file data to download. Returning false at any point
+   * terminates the transfer. local file arg is optional.
    */
-  ftp->Download([](char *b, size_t n) {
+  ftp->Download([](const char *b, size_t n) {
     if (b)
       std::cout << std::string(b, n);
     else
       std::cout << "Download completed\n";
     return true;
-  }, "bootstrap-vcpkg.bat", NPL::EDCProt::Protected);
+  }, "bootstrap-vcpkg.bat", "", NPL::EDCProt::Protected);
 
   /**
-   * File upload. The lambda argument is an input callback which is invoked
-   * multiple times with chunks of file data. Returning false from this
-   * callback indicates that there is no more file data to be uploded. Return
-   * true for recieving subsequent callbacks
+   * File upload. The lambda argument is an output callback which is invoked
+   * multiple times with chunks of file data as they are uploaded. A null "b"
+   * (buffer) pointer indicates that there's no more file data to be uploaded.
+   * Returning false from this callback closes the transfer.
    */
-  ftp->Upload([](char **b, size_t *n) {
-    *b = "This is file data.";
-    *n = strlen("This is file data.");
-    return false;
-  }, "y.txt", NPL::EDCProt::Protected);
+  ftp->Upload([](const char *b, size_t n) {
+    return true;
+  }, "y.txt", "C:\\x.txt", NPL::EDCProt::Protected);
 
   /**
    * Get the current directory
@@ -80,7 +80,7 @@ int main(void)
    */
   ftp->Quit();
  
-  std::this_thread::sleep_for(std::chrono::milliseconds(15000));
+  std::this_thread::sleep_for(std::chrono::milliseconds(8000));
 
   return 0;
 }

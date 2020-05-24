@@ -38,7 +38,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     CDevice() = default;
 
-    CDevice(const std::string& aFilename)
+    CDevice(const std::string& aFilename, bool bCreateNew)
     {
       #ifdef WIN32
         iFD = CreateFileA(
@@ -46,8 +46,8 @@ class CDevice : public CSubject<uint8_t, uint8_t>
           GENERIC_READ|GENERIC_WRITE,
           FILE_SHARE_READ|FILE_SHARE_WRITE,
           NULL,
-          OPEN_ALWAYS,
-          FILE_FLAG_OVERLAPPED|FILE_FLAG_NO_BUFFERING,
+          (bCreateNew ? CREATE_ALWAYS : OPEN_ALWAYS),
+          FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
           NULL);
 
         if (iFD != INVALID_HANDLE_VALUE)
