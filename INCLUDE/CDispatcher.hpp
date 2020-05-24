@@ -12,6 +12,8 @@
  #include <sys/epoll.h>
 #endif
 
+using namespace NPL;
+
 class CDispatcher : public CSubject<uint8_t, uint8_t>
 {
   public:

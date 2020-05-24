@@ -207,7 +207,7 @@ class CDeviceSocket : public CDevice
     {
       CDevice::OnConnect();
       #ifdef WIN32
-      setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+       setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
       #endif      
     }
 

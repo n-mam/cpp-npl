@@ -24,6 +24,31 @@ namespace NPL
     return ftp;
   }
 
+  using TFileReadCbk = std::function<bool (const uint8_t *, size_t)>;
+
+  auto make_file_reader(TFileReadCbk cbk, const std::string& aFile)
+  {
+    auto fDev = std::make_shared<CDevice>(aFile.c_str());
+
+    auto observer = std::make_shared<CListener>(
+      nullptr,
+      [=] (const uint8_t *b, size_t n) {
+        if (cbk(b, n))
+        {
+          fDev->Read();
+        }
+      },
+      nullptr,
+      [=] () {
+        cbk(nullptr, 0);
+      }
+    );
+
+    D->AddEventListener(fDev)->AddEventListener(observer);
+
+    return fDev;
+  }
+
 } //namespace NPL
 
 void TEST_DISPATCHER()

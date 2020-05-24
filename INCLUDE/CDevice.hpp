@@ -8,6 +8,8 @@
 #include <assert.h>
 #include <inttypes.h>
 
+namespace NPL {
+
 enum EIOTYPE : uint8_t
 {
   INIT = 0,
@@ -45,7 +47,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
           FILE_SHARE_READ|FILE_SHARE_WRITE,
           NULL,
           OPEN_ALWAYS,
-          FILE_FLAG_OVERLAPPED,
+          FILE_FLAG_OVERLAPPED|FILE_FLAG_NO_BUFFERING,
           NULL);
 
         if (iFD != INVALID_HANDLE_VALUE)
@@ -124,4 +126,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
 using SPCDevice = std::shared_ptr<CDevice>;
 using WPCDevice = std::weak_ptr<CDevice>;
+
+} //namespace NPL
+
 #endif //DEVICE_HPP

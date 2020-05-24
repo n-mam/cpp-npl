@@ -383,13 +383,14 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         case '1':
         {
-          iDataChannel->Read();          
+          iDataChannel->Read();
 
           if (iDCProtection == EDCProt::Protected)
           {
-            iDataChannel->InitializeSSL([this](){
-              StartDataTransfer();
-            });
+            iDataChannel->InitializeSSL(
+              [this] () {
+                StartDataTransfer();
+              });
           }
           else
           {
