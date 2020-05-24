@@ -287,7 +287,7 @@ class CDeviceSocket : public CDevice
       }
       else
       {
-        CDevice::Write();
+        CDevice::Write(b, l);
       }
     }
 

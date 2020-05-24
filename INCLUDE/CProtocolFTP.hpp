@@ -563,7 +563,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       iDataChannel->Write(b, n);
 
-      iCurrentFileOffset += 10;
+      iCurrentFileOffset += n;
 
       iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
     }

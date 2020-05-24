@@ -60,11 +60,13 @@ int main(void)
    * File upload. The lambda argument is an output callback which is invoked
    * multiple times with chunks of file data as they are uploaded. A null "b"
    * (buffer) pointer indicates that there's no more file data to be uploaded.
-   * Returning false from this callback closes the transfer.
+   * Returning false from this callback closes the transfer. Data channel 
+   * protection is 'C'lear for the upload implying a granular PROT levels on a 
+   * per transfer basis.
    */
   ftp->Upload([](const char *b, size_t n) {
     return true;
-  }, "y.txt", "C:\\x.txt", NPL::EDCProt::Protected);
+  }, "y.txt", "C:\\x.txt", NPL::EDCProt::Clear);
 
   /**
    * Get the current directory
