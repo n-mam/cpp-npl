@@ -70,7 +70,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual void List(TTransferCbk cbk, const std::string& fRemote = "", DCProt P = DCProt::Clear)
+    virtual void ListDirectory(TTransferCbk cbk, const std::string& fRemote = "", DCProt P = DCProt::Clear)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -143,6 +143,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     bool iContinueTransfer = false;
 
+    uint64_t iCurrentFileOffset = 0;
+
     SPCDevice iFileDevice = nullptr;
 
     SPCDeviceSocket iDataChannel = nullptr;
@@ -150,8 +152,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     std::atomic_flag iJobInProgress = ATOMIC_FLAG_INIT;
 
     std::atomic_char iPendingResponse = 0;
-
-    uint64_t iCurrentFileOffset = 0;
 
     std::list<
       std::tuple<
@@ -546,7 +546,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         iFileDevice->Write(b, n, iCurrentFileOffset);
         iCurrentFileOffset += n;
-      }      
+      }
     }
 
     virtual void OnDataChannelWrite(const uint8_t *b, size_t n)

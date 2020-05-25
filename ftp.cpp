@@ -20,14 +20,16 @@ int main(void)
    */
   ftp->StartProtocol();
 
+  for (int i = 0; i < 2; i++) {
+
   /**
    * Directory listing. The lambda argument is an output callback 
    * which is invoked multiple times with chunks of directory list
    * data. A null "b" (buffer) pointer indicates that there's no 
    * more data. Returning false at any point terminates the transfer.
    */
-  std::string list;
-  ftp->List([&](const char *b, size_t n) {
+  ftp->ListDirectory(
+    [list = std::string("")] (const char *b, size_t n) mutable {
     if (b)
      list.append(std::string(b, n));
     else
@@ -77,13 +79,17 @@ int main(void)
      */
   });
 
+  //ftp->SetCurrentDir("/");
+  }
+
   /**
    * Quit the session. Sends FTP QUIT command
    * and triggeres the cleanup of "ftp" object
    */
   ftp->Quit();
  
-  std::this_thread::sleep_for(std::chrono::milliseconds(8000));
+   getchar();
+  //std::this_thread::sleep_for(std::chrono::milliseconds(8000));
 
   return 0;
 }
