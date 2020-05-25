@@ -65,7 +65,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       iJobQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
-      iJobQ.emplace_back("RETR", fRemote, "", nullptr, cbk);
+      iJobQ.emplace_back("RETR", fRemote, fLocal, nullptr, cbk);
 
       ProcessNextJob();
     }
@@ -416,6 +416,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         ResetDataChannel();
 
+        if (iFileDevice)
+        {
+          iFileDevice->MarkRemoveAllListeners();
+          iFileDevice->MarkRemoveSelfAsListener();
+          iFileDevice.reset();
+        }
+
         if (abort)
         {
           iJobQ.clear();
@@ -575,8 +582,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnFileDisconnect(void)
     {
-      iFileDevice->MarkRemoveAllListeners();
-      iFileDevice->MarkRemoveSelfAsListener();
       iDataChannel->Shutdown();
     }
 
@@ -620,11 +625,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
               cmd == "STOR");
     }
 
-    virtual bool IsDownloadCommand(const std::string& cmd)
-    {
-      return (cmd == "RETR");
-    }
-
     virtual bool IsResponsePositive(char c)
     {
       return (c == '2');
@@ -651,4 +651,5 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;
 
 } //npl namespace
+
 #endif //FTPSEGMENTER_HPP

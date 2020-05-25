@@ -54,7 +54,7 @@ int main(void)
     else
       std::cout << "Download completed\n";
     return true;
-  }, "bootstrap-vcpkg.bat", "", NPL::EDCProt::Protected);
+  }, "bootstrap-vcpkg.bat", "c:\\download.bat", NPL::EDCProt::Protected);
 
   /**
    * File upload. The lambda argument is an output callback which is invoked
