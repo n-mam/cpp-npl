@@ -163,7 +163,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         {
           if ((void *)o.get() == (void *)k)
           {
-            std::cout << unsigned(ctx->type) << " " << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << n << "\n";            
+            //std::cout << unsigned(ctx->type) << " " << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << n << "\n";            
             
             ul.unlock();
 

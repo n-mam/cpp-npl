@@ -7,7 +7,7 @@ int main(void)
   /**
    * Create an FTP object.
    */
-  auto ftp = NPL::make_ftp("127.0.0.1", 990, NPL::ESSL::Implicit);
+  auto ftp = NPL::make_ftp("127.0.0.1", 21, NPL::ESSL::Explicit);
 
   /**
    * Set the login credentials.

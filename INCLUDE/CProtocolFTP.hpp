@@ -172,16 +172,17 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       TStateFn     iTransitionFn;
     };
 
-    Transition FSM[26] =
+    Transition FSM[27] =
     {
       // Connection states
       { "CONNECTED" , '1', "CONNECTED" , nullptr                                        },
-      { "CONNECTED" , '2', "USER"      , [this](){ SendCommand("USER", iUserName); }    },
+      { "CONNECTED" , '2', "CHECK"     , [this](){ CheckExplicitFTPS(); }               },
       { "CONNECTED" , '4', "CONNECTED" , nullptr                                        },
+      { "AUTH"      , '2', "TLS"       , [this](){ DoCCHandshake();     }               },
       // USER states
       { "USER"      , '1', "USER",       [this](){ }                                    },
       { "USER"      , '2', "READY",      [this](){ }                                    },
-      { "USER"      , '3', "PASS",       [this](){ SendCommand("PASS", iPassword);}     },
+      { "USER"      , '3', "PASS",       [this](){ SendCommand("PASS", iPassword); }    },
       { "USER"      , '4', "USER",       [this](){ }                                    },
       { "USER"      , '5', "USER",       [this](){ }                                    },
       // PASS states
@@ -329,6 +330,20 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         }
 
         SendCommand(cmd, fRemote);
+      }
+    }
+
+    virtual void CheckExplicitFTPS(void)
+    {
+      if (iSSLType == ESSL::Explicit)
+      {
+        iProtocolState = "AUTH";        
+        SendCommand("AUTH", "TLS");
+      }
+      else
+      {
+        iProtocolState = "USER";        
+        SendCommand("USER", iUserName);
       }
     }
 
@@ -634,16 +649,29 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       CProtocol::OnConnect();
 
+      if (iSSLType == ESSL::Implicit)
+      {
+        DoCCHandshake();
+      }
+    }
+
+    virtual void DoCCHandshake()
+    {
       auto cc = iTarget.lock();
 
       if (cc)
       {
         auto sock = std::dynamic_pointer_cast<CDeviceSocket>(cc);
 
-        if (iSSLType == ESSL::Implicit)
-        {
-          sock->InitializeSSL();
-        }
+        assert(sock);
+
+        sock->InitializeSSL([this] () {
+          if (iSSLType == ESSL::Explicit)
+          {
+            iProtocolState = "USER";
+            SendCommand("USER", iUserName);
+          }
+        });
       }
     }
 };
