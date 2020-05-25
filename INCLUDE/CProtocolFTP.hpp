@@ -13,14 +13,14 @@
 
 namespace NPL {
 
-enum class ESSL : uint8_t
+enum class FTPS : uint8_t
 {
   None = 0,
   Implicit,
   Explicit
 };
 
-enum class EDCProt : uint8_t
+enum class DCProt : uint8_t
 {
   Clear = 0,
   Protected
@@ -40,7 +40,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual ~CProtocolFTP() {}
 
-    virtual void Upload(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, EDCProt P = EDCProt::Clear)
+    virtual void Upload(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, DCProt P = DCProt::Clear)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -55,7 +55,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual void Download(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, EDCProt P = EDCProt::Clear)
+    virtual void Download(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, DCProt P = DCProt::Clear)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -70,7 +70,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();
     }
 
-    virtual void List(TTransferCbk cbk, const std::string& fRemote = "", EDCProt P = EDCProt::Clear)
+    virtual void List(TTransferCbk cbk, const std::string& fRemote = "", DCProt P = DCProt::Clear)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -130,16 +130,16 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextJob();       
     }
 
-    virtual void SetFTPSType(ESSL ftps)
+    virtual void SetFTPS(FTPS ftps)
     {
-      iSSLType = ftps;
+      iFTPS = ftps;
     }
 
   protected:
 
-    ESSL iSSLType = ESSL::None;
+    FTPS iFTPS = FTPS::None;
 
-    EDCProt iDCProtection = EDCProt::Clear;
+    DCProt iDCProt = DCProt::Clear;
 
     bool iContinueTransfer = false;
 
@@ -266,20 +266,20 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
     }
 
-    virtual void SetDCProtLevel(EDCProt P)
+    virtual void SetDCProtLevel(DCProt P)
     {
-      if (iSSLType == ESSL::Implicit || 
-          iSSLType == ESSL::Explicit)
+      if (iFTPS == FTPS::Implicit || 
+          iFTPS == FTPS::Explicit)
       {
         iJobQ.emplace_back("PBSZ", "0", "", nullptr, nullptr);
 
-        auto level = (P == EDCProt::Clear) ? "C" : "P";
+        auto level = (P == DCProt::Clear) ? "C" : "P";
 
         iJobQ.emplace_back("PROT", level, "", 
           [this, lvl = level](const std::string& res){
             if (res[0] == '2')
             {
-              iDCProtection = (lvl == "C") ? EDCProt::Clear : EDCProt::Protected;
+              iDCProt = (lvl == "C") ? DCProt::Clear : DCProt::Protected;
             }
           }, nullptr);
       }
@@ -335,7 +335,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void CheckExplicitFTPS(void)
     {
-      if (iSSLType == ESSL::Explicit)
+      if (iFTPS == FTPS::Explicit)
       {
         iProtocolState = "AUTH";        
         SendCommand("AUTH", "TLS");
@@ -398,7 +398,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         case '1':
         {
-          if (iDCProtection == EDCProt::Protected)
+          if (iDCProt == DCProt::Protected)
           {
             iDataChannel->InitializeSSL(
               [this] () {
@@ -649,7 +649,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       CProtocol::OnConnect();
 
-      if (iSSLType == ESSL::Implicit)
+      if (iFTPS == FTPS::Implicit)
       {
         DoCCHandshake();
       }
@@ -666,7 +666,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         assert(sock);
 
         sock->InitializeSSL([this] () {
-          if (iSSLType == ESSL::Explicit)
+          if (iFTPS == FTPS::Explicit)
           {
             iProtocolState = "USER";
             SendCommand("USER", iUserName);

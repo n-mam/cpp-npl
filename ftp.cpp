@@ -7,7 +7,7 @@ int main(void)
   /**
    * Create an FTP object.
    */
-  auto ftp = NPL::make_ftp("127.0.0.1", 21, NPL::ESSL::Explicit);
+  auto ftp = NPL::make_ftp("127.0.0.1", 21, NPL::FTPS::Explicit);
 
   /**
    * Set the login credentials.
@@ -54,7 +54,7 @@ int main(void)
     else
       std::cout << "Download completed\n";
     return true;
-  }, "bootstrap-vcpkg.bat", "c:\\download.bat", NPL::EDCProt::Protected);
+  }, "bootstrap-vcpkg.bat", "c:\\download.bat", NPL::DCProt::Protected);
 
   /**
    * File upload. The lambda argument is an output callback which is invoked
@@ -66,7 +66,7 @@ int main(void)
    */
   ftp->Upload([](const char *b, size_t n) {
     return true;
-  }, "y.txt", "C:\\x.txt", NPL::EDCProt::Clear);
+  }, "y.txt", "C:\\x.txt", NPL::DCProt::Clear);
 
   /**
    * Get the current directory

@@ -6,14 +6,14 @@ namespace NPL
 {
   auto D = std::make_shared<CDispatcher>();
 
-  auto make_ftp(const std::string& host, int port, ESSL ftps = ESSL::None)
+  auto make_ftp(const std::string& host, int port, FTPS ftps = FTPS::None)
   {
     auto cc = std::make_shared<CDeviceSocket>();
     auto ftp = std::make_shared<CProtocolFTP>();    
 
     cc->SetHostAndPort(host, port);
 
-    ftp->SetFTPSType(ftps);
+    ftp->SetFTPS(ftps);
 
     cc->SetName("cc");
 
