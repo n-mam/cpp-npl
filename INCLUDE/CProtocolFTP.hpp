@@ -537,7 +537,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         }
         else
         {
-          iDataChannel->Shutdown();
+          iDataChannel->StopSocket();
           return;
         }
       }
@@ -578,7 +578,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         }
         else
         {
-          iDataChannel->Shutdown();
+          iDataChannel->StopSocket();
           return;          
         }
       }
@@ -597,7 +597,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnFileDisconnect(void)
     {
-      iDataChannel->Shutdown();
+      iDataChannel->StopSocket();
     }
 
     virtual void TriggerDataTransfer(void)

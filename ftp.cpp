@@ -20,8 +20,6 @@ int main(void)
    */
   ftp->StartProtocol();
 
-  for (int i = 0; i < 2; i++) {
-
   /**
    * Directory listing. The lambda argument is an output callback 
    * which is invoked multiple times with chunks of directory list
@@ -54,7 +52,7 @@ int main(void)
     if (b)
       std::cout << std::string(b, n);
     else
-      std::cout << "Download completed\n";
+      std::cout << "Download complete.\n";
     return true;
   }, "bootstrap-vcpkg.bat", "c:\\download.bat", NPL::DCProt::Protected);
 
@@ -79,17 +77,15 @@ int main(void)
      */
   });
 
-  //ftp->SetCurrentDir("/");
-  }
+  ftp->SetCurrentDir("/");
 
   /**
    * Quit the session. Sends FTP QUIT command
    * and triggeres the cleanup of "ftp" object
    */
   ftp->Quit();
- 
-   getchar();
-  //std::this_thread::sleep_for(std::chrono::milliseconds(8000));
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(8000));
 
   return 0;
 }

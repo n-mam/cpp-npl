@@ -22,18 +22,34 @@ class CDeviceSocket : public CDevice
 
     ~CDeviceSocket()
     {
-      shutdown((SOCKET)iFD, 0);
+      StopSocket();
+      shutdown((SOCKET)iFD, 0); //sd_recv
       closesocket((SOCKET)iFD);
+      std::cout << "~" << iName << " : shutdown socket sd_recv.\n";      
     }
 
-    void Shutdown(void)
+    void StopSocket(void)
     {
-      if (ssl)
+      if (!iStopped)
       {
-        SSL_shutdown(ssl);
-        UpdateWBIO();
+        if (ssl)
+        {
+          int flag = SSL_get_shutdown(ssl);
+
+          if (!(flag & SSL_SENT_SHUTDOWN))
+          {
+            int rc = SSL_shutdown(ssl);
+            std::cout << iName << " StopSocket() : ssl_shutdown rc : " << rc << "\n";          
+            UpdateWBIO();
+          }
+        }
+
+        shutdown((SOCKET)iFD, 1); //sd_send
+        
+        iStopped = true;
+
+        std::cout << iName << " StopSocket() : shutdown socket sd_send.\n";
       }
-      shutdown((SOCKET)iFD, 1);      
     }
 
     void StartSocketClient(void)
@@ -170,17 +186,34 @@ class CDeviceSocket : public CDevice
       iPort = aPort;
     }
 
+    void CheckPeerSSLShutdown()
+    {
+      int flag = SSL_get_shutdown(ssl);
+
+      if (flag & SSL_RECEIVED_SHUTDOWN)
+      {
+        std::cout << iName << " CheckPeerSSLShutdown : SSL_RECEIVED_SHUTDOWN, flags : " << flag << "\n";
+
+        if (!(flag & SSL_SENT_SHUTDOWN))
+        {
+          StopSocket();
+        }
+      }
+    }
+
     void UpdateWBIO()
     {
-      int l = BIO_pending(wbio);
+      CheckPeerSSLShutdown();
 
-      uint8_t buf[1024];
+      int pending = BIO_pending(wbio);
 
-      if (l)
+      uint8_t buf[2048];
+
+      if (pending)
       {
-        int rc = BIO_read(wbio, buf, l);
+        int rc = BIO_read(wbio, buf, pending);
 
-        CDevice::Write(buf, l);
+        CDevice::Write(buf, pending);
       }
     }
 
@@ -232,7 +265,7 @@ class CDeviceSocket : public CDevice
         if (!iHandshakeDone)
         {
           rc = SSL_do_handshake(ssl);
-          
+
           if (rc == 1)
           {
             iHandshakeDone = true;
@@ -297,7 +330,7 @@ class CDeviceSocket : public CDevice
 
     std::string iHost = "";
 
-    TOnHandshake iOnHandShakeSuccessful = nullptr;
+    bool iStopped = false;
 
     SSL_CTX *ctx = nullptr;
 
@@ -311,7 +344,7 @@ class CDeviceSocket : public CDevice
 
     uint8_t iRBuf[1024];
 
-    uint8_t iWBuf[1024];
+    TOnHandshake iOnHandShakeSuccessful = nullptr;
 
     #ifdef WIN32
     void * GetExtentionPfn(GUID guid, FD fd)

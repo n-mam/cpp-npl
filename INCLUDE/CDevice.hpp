@@ -88,7 +88,12 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
         (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-        ReadFile(iFD, (LPVOID) ctx->b, l, &ctx->n, &ctx->ol);
+        BOOL fRet = ReadFile(iFD, (LPVOID) ctx->b, l, &ctx->n, &ctx->ol);
+
+        if (!fRet && GetLastError() != ERROR_IO_PENDING)
+        {
+          std::cout << "WriteFile failed : " << GetLastError() << "\n";
+        }
 
         #endif
       }
@@ -99,25 +104,30 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       if (iConnected)
       {
         if (b && l)
-      {
-        Context *ctx = (Context *) calloc(1, sizeof(Context));
+        {
+          Context *ctx = (Context *) calloc(1, sizeof(Context));
 
-        ctx->type = EIOTYPE::WRITE;
+          ctx->type = EIOTYPE::WRITE;
 
-        ctx->b = b;
+          ctx->b = b;
 
-        #ifdef linux
+          #ifdef linux
 
-        #else
+          #else
 
-        (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
-        (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
+          (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
+          (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-        WriteFile(iFD, (LPVOID) b, l, &ctx->n, &ctx->ol);
+          BOOL fRet = WriteFile(iFD, (LPVOID) b, l, &ctx->n, &ctx->ol);
 
-        #endif
+          if (!fRet && GetLastError() != ERROR_IO_PENDING)
+          {
+            std::cout << "WriteFile failed : " << GetLastError() << "\n";
+          }
+
+          #endif
+       }
       }
-    }
     }
 
   protected:
