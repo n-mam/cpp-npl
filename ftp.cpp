@@ -20,6 +20,8 @@ int main(void)
    */
   ftp->StartProtocol();
 
+  DCProt protection = DCProt::Protected;
+
   /**
    * Directory listing. The lambda argument is an output callback 
    * which is invoked multiple times with chunks of directory list
@@ -33,7 +35,7 @@ int main(void)
     else
      std::cout << list;
     return true;
-  });
+  }, "", protection);
 
   /**
    * Set the current directory
@@ -54,7 +56,7 @@ int main(void)
     else
       std::cout << "Download complete.\n";
     return true;
-  }, "bootstrap-vcpkg.bat", "c:\\download.bat", NPL::DCProt::Protected);
+  }, "bootstrap-vcpkg.bat", "c:\\download.bat", protection);
 
   /**
    * File upload. The lambda argument is an output callback which is invoked
@@ -66,7 +68,7 @@ int main(void)
    */
   ftp->Upload([](const char *b, size_t n) {
     return true;
-  }, "y.txt", "C:\\x.txt", NPL::DCProt::Clear);
+  }, "y.txt", "C:\\x.txt", protection);
 
   /**
    * Get the current directory

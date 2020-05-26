@@ -25,7 +25,8 @@ class CDeviceSocket : public CDevice
       StopSocket();
       shutdown((SOCKET)iFD, 0); //sd_recv
       closesocket((SOCKET)iFD);
-      std::cout << "~" << iName << " : shutdown socket sd_recv.\n";      
+      if (ssl) SSL_free(ssl);
+      std::cout << "~" << iName << " : shutdown socket sd_recv.\n";
     }
 
     void StopSocket(void)
@@ -221,7 +222,7 @@ class CDeviceSocket : public CDevice
     {
       iOnHandShakeSuccessful = cbk;
       ctx = SSL_CTX_new(TLSv1_2_client_method());
-      SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);      
+      SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
       ssl = SSL_new(ctx);
       rbio = BIO_new(BIO_s_mem());
       wbio = BIO_new(BIO_s_mem());
