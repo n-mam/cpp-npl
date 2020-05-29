@@ -18,7 +18,7 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void StartProtocol(bool client = true)
     {
-      auto sub = iTarget.lock();
+      auto sub = (this->iTarget).lock();
 
       if (sub)
       {

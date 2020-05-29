@@ -221,7 +221,7 @@ class CDeviceSocket : public CDevice
     void InitializeSSL(TOnHandshake cbk = nullptr)
     {
       iOnHandShakeSuccessful = cbk;
-      ctx = SSL_CTX_new(TLSv1_2_client_method());
+      ctx = SSL_CTX_new(TLS_client_method());
       SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
       ssl = SSL_new(ctx);
       rbio = BIO_new(BIO_s_mem());
