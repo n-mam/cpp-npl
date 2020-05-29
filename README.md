@@ -16,6 +16,12 @@ Build
 ```sh
 Install openssl using vcpkg
 https://github.com/Microsoft/vcpkg
+On Linux, export the following env variables:
+nmam@vm:~/cpp-np-lib/build$ echo $OPENSSL_ROOT_DIR
+/home/nmam/vcpkg/installed/x64-linux
+nmam@vm:~/cpp-np-lib/build$ echo $OPENSSL_INCLUDE_DIR
+/home/nmam/vcpkg/installed/x64-linux/include
+
 ```
 ```sh
 mkdir build
