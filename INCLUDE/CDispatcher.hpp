@@ -10,6 +10,7 @@
 #ifdef linux
  #include <unistd.h>
  #include <sys/epoll.h>
+ #include <string.h>
 #endif
 
 using namespace NPL;
@@ -127,12 +128,12 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
           int fRet = epoll_wait(iEventPort, &e, 1, -1);
 
-          if (fRet == -1)
+          if (fRet < 0 && errno == EINTR)
           {
-            break;
+            continue;
           }
       
-          void * k = e.data.ptr;
+          void *k = e.data.ptr;
 
         #else
 
@@ -153,9 +154,9 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         ctx = (Context *) o;
 
-        #endif
-
         ctx->n = n;
+
+        #endif
 
         std::unique_lock<std::mutex> ul(iLock);
 
