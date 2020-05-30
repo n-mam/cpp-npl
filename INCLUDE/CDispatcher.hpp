@@ -121,6 +121,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       while (true)
       {
         Context *ctx = nullptr;
+
         unsigned long n;
 
         #ifdef linux
@@ -133,8 +134,17 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           {
             continue;
           }
-      
+
           void *k = e.data.ptr;
+
+          ctx = (Context *) calloc(1, sizeof(Context));
+
+          ctx->b = (uint8_t *) calloc(1, 10);
+
+          if (e.events & EPOLLIN)
+          {
+            ctx->type = EIOTYPE::READ;
+          }
 
         #else
 
@@ -171,6 +181,10 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             if (ctx->type == EIOTYPE::READ)
             {
+              #ifdef linux
+              ctx->n = read(o->iFd, ctx->b, 10);
+              #endif
+
               if (ctx->n != 0)
               {
                 o->OnRead(ctx->b, ctx->n);

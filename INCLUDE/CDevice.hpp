@@ -121,6 +121,10 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
+      ssize_t fRet = write(iFD, b, l);
+
+      assert(fRet == l);
+
       #else
 
       (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
