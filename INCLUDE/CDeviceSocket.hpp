@@ -220,7 +220,7 @@ class CDeviceSocket : public CDevice
 
     void InitializeSSL(TOnHandshake cbk = nullptr)
     {
-      iOnHandShakeSuccessful = cbk;
+      iOnHandShake = cbk;
       ctx = SSL_CTX_new(TLS_client_method());
       SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
       ssl = SSL_new(ctx);
@@ -253,15 +253,13 @@ class CDeviceSocket : public CDevice
 
     virtual void OnRead(const uint8_t *b, size_t n) override
     {
-      assert(n);
-
       CDevice::Read();
 
       if (ssl)
       {
-        BIO_write(rbio, b, n);
+        int rc = BIO_write(rbio, b, n);
 
-        int rc;
+        assert(rc == n);
 
         if (!iHandshakeDone)
         {
@@ -271,9 +269,9 @@ class CDeviceSocket : public CDevice
           {
             iHandshakeDone = true;
 
-            if (iOnHandShakeSuccessful)
+            if (iOnHandShake)
             {
-              iOnHandShakeSuccessful();
+              iOnHandShake();
             }
           }
         }
@@ -341,11 +339,11 @@ class CDeviceSocket : public CDevice
 
     BIO *wbio = nullptr;
 
-    bool iHandshakeDone = false;
-
     uint8_t iRBuf[1024];
 
-    TOnHandshake iOnHandShakeSuccessful = nullptr;
+    bool iHandshakeDone = false;
+
+    TOnHandshake iOnHandShake = nullptr;
 
     #ifdef WIN32
     void * GetExtentionPfn(GUID guid, FD fd)

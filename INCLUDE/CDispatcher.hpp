@@ -78,6 +78,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         struct epoll_event e;
 
         e.events = EPOLLIN | EPOLLOUT | EPOLLONESHOT;
+
         e.data.ptr = device.get();
 
         int rc = epoll_ctl(iEventPort, EPOLL_CTL_ADD, device->iFD, &e);
