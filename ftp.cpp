@@ -12,7 +12,11 @@ int main(void)
   /**
    * Set the login credentials.
    */
-  ftp->SetCredentials("ftpuser", "ftpuser");
+  #ifdef linux
+    ftp->SetCredentials("ftpuser", "ftpuser");
+  #else
+    ftp->SetCredentials("anonymous", "welcome123");
+  #endif
 
   /**
    * Start the protocol. This would asynchronously

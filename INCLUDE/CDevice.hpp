@@ -109,7 +109,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         std::cout << "WriteFile failed : " << GetLastError() << "\n";
       }
 
-      return -1;
+      return nullptr;
 
       #endif
     }
