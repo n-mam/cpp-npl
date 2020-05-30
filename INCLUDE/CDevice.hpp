@@ -93,7 +93,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
-      return read(iFD, b, l);
+      return read(iFD, (void *) ctx->b, l);
 
       #else
 
