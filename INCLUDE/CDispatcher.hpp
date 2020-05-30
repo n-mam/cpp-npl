@@ -144,6 +144,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           if (e.events & EPOLLIN)
           {
             ctx->type = EIOTYPE::READ;
+
+            ctx->n = ((CSubject *)k)->Read(ctx->b, 10);
           }
 
         #else
@@ -182,7 +184,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             if (ctx->type == EIOTYPE::READ)
             {
               #ifdef linux
-              ctx->n = o->Read(ctx->b, 10);
+              ctx->n = o->Read(ctx->b, 10, 0);
               #endif
 
               if (ctx->n != 0)

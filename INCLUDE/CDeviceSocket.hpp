@@ -202,7 +202,7 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    void UpdateWBIO()
+    int64_t UpdateWBIO()
     {
       CheckPeerSSLShutdown();
 
@@ -214,8 +214,10 @@ class CDeviceSocket : public CDevice
       {
         int rc = BIO_read(wbio, buf, pending);
 
-        CDevice::Write(buf, pending);
+        return CDevice::Write(buf, pending);
       }
+
+      return -1;
     }
 
     void InitializeSSL(TOnHandshake cbk = nullptr)
@@ -310,16 +312,16 @@ class CDeviceSocket : public CDevice
       CDevice::OnWrite(b, n);
     }
 
-    virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    virtual int64_t Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
       if (ssl)
       {
         SSL_write(ssl, b, l);
-        UpdateWBIO();
+        return UpdateWBIO();
       }
       else
       {
-        CDevice::Write(b, l);
+        return CDevice::Write(b, l);
       }
     }
 

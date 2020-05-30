@@ -65,16 +65,16 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     virtual ~CDevice() {};
 
-    virtual void Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    virtual int64_t Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
       if (!iConnected)
       {
         std::cout << "CDevice::Read() Not connected\n";
-        return;
+        return -1;
       }
 
       #ifdef linux
-      if (!b) return;
+      assert(b);
       #endif
 
       Context *ctx = (Context *) calloc(1, sizeof(Context));
@@ -93,6 +93,8 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
+      return read(iFD, b, l);
+
       #else
 
       (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
@@ -105,15 +107,17 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         std::cout << "WriteFile failed : " << GetLastError() << "\n";
       }
 
+      return -1;
+
       #endif
     }
 
-    virtual void Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
+    virtual int64_t Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
     {
       if (!iConnected)
       {
         std::cout << "CDevice::Write() Not connected\n";
-        return;
+        return -1;
       }
 
       assert(b && l);
@@ -126,9 +130,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
-      ssize_t fRet = write(iFD, b, l);
-
-      assert(fRet == l);
+      return write(iFD, b, l);
 
       #else
 
@@ -141,6 +143,8 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       {
         std::cout << "WriteFile failed : " << GetLastError() << "\n";
       }
+
+      return -1;
 
       #endif
     }
