@@ -65,16 +65,16 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     virtual ~CDevice() {};
 
-    virtual int64_t Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
       if (!iConnected)
       {
         std::cout << "CDevice::Read() Not connected\n";
-        return -1;
+        return nullptr;
       }
 
       #ifdef linux
-      assert(b);
+      if (!b) return nullptr;
       #endif
 
       Context *ctx = (Context *) calloc(1, sizeof(Context));
@@ -93,7 +93,9 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
-      return read(iFD, (void *) ctx->b, l);
+      ctx->n = read(iFD, (void *) ctx->b, l);
+
+      return (void *) ctx;
 
       #else
 

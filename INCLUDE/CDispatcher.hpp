@@ -77,7 +77,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         struct epoll_event e;
 
-        e.events = EPOLLIN | EPOLLOUT | EPOLLONESHOT;
+        e.events = EPOLLIN | EPOLLOUT;
 
         e.data.ptr = device.get();
 
@@ -137,16 +137,24 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
           void *k = e.data.ptr;
 
-          ctx = (Context *) calloc(1, sizeof(Context));
+          uint8_t *rbuf = (uint8_t *) calloc(1, 10);
 
-          ctx->b = (uint8_t *) calloc(1, 10);
+          if (e.events & EPOLLOUT)
+          {
+            if (!((CSubject *)k)->IsConnected())
+            {
+              ctx = (NPL::Context *) calloc(1, sizeof(NPL::Context));
 
+              ctx->type = EIOTYPE::INIT;
+            }
+          }
+          
           if (e.events & EPOLLIN)
           {
-            ctx->type = EIOTYPE::READ;
-
-            ctx->n = ((CSubject *)k)->Read(ctx->b, 10);
+            ctx = (NPL::Context *)((CSubject *)k)->Read(rbuf, 10);
           }
+
+          if (!ctx) continue;
 
         #else
 
@@ -177,16 +185,12 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         {
           if ((void *)o.get() == (void *)k)
           {
-            std::cout << unsigned(ctx->type) << " " << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << n << "\n";            
+            std::cout << unsigned(ctx->type) << " " << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << ctx->n << "\n";            
             
             ul.unlock();
 
             if (ctx->type == EIOTYPE::READ)
             {
-              #ifdef linux
-              ctx->n = o->Read(ctx->b, 10, 0);
-              #endif
-
               if (ctx->n != 0)
               {
                 o->OnRead(ctx->b, ctx->n);

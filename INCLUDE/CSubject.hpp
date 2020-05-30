@@ -37,7 +37,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       return iTarget;
     }
 
-    virtual int64_t Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
     {
       std::lock_guard<std::mutex> lg(iLock);
 
@@ -48,7 +48,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
         return target->Read(b, l, o);
       }
 
-      return -1;
+      return nullptr;
     }
 
     virtual int64_t Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
