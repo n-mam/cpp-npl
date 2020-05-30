@@ -30,6 +30,8 @@ struct Context
     unsigned long  n;
 };
 
+constexpr uint32_t DEVICE_BUFFER_SIZE = 10;
+
 class CDevice : public CSubject<uint8_t, uint8_t>
 {
   public:
@@ -65,69 +67,73 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     virtual void Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
-      if (iConnected)
+      if (!iConnected)
       {
-        Context *ctx = (Context *) calloc(1, sizeof(Context));
-
-        ctx->type = EIOTYPE::READ;
-
-        if (b)
-        {
-          ctx->b = b;
-        }
-        else
-        {
-          ctx->b = (uint8_t *) calloc(1, 10);
-          l = 10;
-        }
-
-        #ifdef linux
-
-        #else
-
-        (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
-        (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
-
-        BOOL fRet = ReadFile(iFD, (LPVOID) ctx->b, l, &ctx->n, &ctx->ol);
-
-        if (!fRet && GetLastError() != ERROR_IO_PENDING)
-        {
-          std::cout << "WriteFile failed : " << GetLastError() << "\n";
-        }
-
-        #endif
+        std::cout << "CDevice::Read() Not connected\n";
       }
+      
+      Context *ctx = (Context *) calloc(1, sizeof(Context));
+
+      ctx->type = EIOTYPE::READ;
+
+      if (b)
+      {
+        ctx->b = b;
+      }
+      else
+      {
+        ctx->b = (uint8_t *) calloc(1, DEVICE_BUFFER_SIZE);
+        l = DEVICE_BUFFER_SIZE;
+      }
+
+      #ifdef linux
+
+      #else
+
+      (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
+      (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
+
+      BOOL fRet = ReadFile(iFD, (LPVOID) ctx->b, l, NULL, &ctx->ol);
+
+      if (!fRet && GetLastError() != ERROR_IO_PENDING)
+      {
+        std::cout << "WriteFile failed : " << GetLastError() << "\n";
+      }
+
+      #endif
     }
 
-    virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    virtual void Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
     {
-      if (iConnected)
+      if (!iConnected)
       {
-        if (b && l)
-        {
-          Context *ctx = (Context *) calloc(1, sizeof(Context));
-
-          ctx->type = EIOTYPE::WRITE;
-
-          ctx->b = b;
-
-          #ifdef linux
-
-          #else
-
-          (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
-          (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
-
-          BOOL fRet = WriteFile(iFD, (LPVOID) b, l, &ctx->n, &ctx->ol);
-
-          if (!fRet && GetLastError() != ERROR_IO_PENDING)
-          {
-            std::cout << "WriteFile failed : " << GetLastError() << "\n";
-          }
-
-          #endif
-       }
+        std::cout << "CDevice::Write() Not connected\n";
+        return;
       }
+
+      assert(b && l);
+
+      Context *ctx = (Context *) calloc(1, sizeof(Context));
+
+      ctx->type = EIOTYPE::WRITE;
+
+      ctx->b = b;
+
+      #ifdef linux
+
+      #else
+
+      (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
+      (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
+
+      BOOL fRet = WriteFile(iFD, (LPVOID) b, l, NULL, &ctx->ol);
+
+      if (!fRet && GetLastError() != ERROR_IO_PENDING)
+      {
+        std::cout << "WriteFile failed : " << GetLastError() << "\n";
+      }
+
+      #endif
     }
 
   protected:
