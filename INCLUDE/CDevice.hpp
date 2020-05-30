@@ -70,8 +70,13 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       if (!iConnected)
       {
         std::cout << "CDevice::Read() Not connected\n";
+        return;
       }
-      
+
+      #ifdef linux
+      if (!b) return;
+      #endif
+
       Context *ctx = (Context *) calloc(1, sizeof(Context));
 
       ctx->type = EIOTYPE::READ;

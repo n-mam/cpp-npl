@@ -182,7 +182,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             if (ctx->type == EIOTYPE::READ)
             {
               #ifdef linux
-              ctx->n = read(o->iFd, ctx->b, 10);
+              ctx->n = o->Read(ctx->b, 10);
               #endif
 
               if (ctx->n != 0)
