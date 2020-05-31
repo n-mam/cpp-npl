@@ -173,21 +173,24 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       TStateFn     iTransitionFn;
     };
 
-    Transition FSM[27] =
+    Transition FSM[30] =
     {
       // Connection states
       { "CONNECTED" , '1', "CONNECTED" , nullptr                                        },
       { "CONNECTED" , '2', "CHECK"     , [this](){ CheckExplicitFTPS(); }               },
       { "CONNECTED" , '4', "CONNECTED" , nullptr                                        },
       { "AUTH"      , '2', "TLS"       , [this](){ DoCCHandshake();     }               },
+      { "AUTH"      , '3', "ADAT"      , nullptr                                        },
+      { "AUTH"      , '4', "USER"      , [this](){ SendCommand("USER", iUserName); }    },
+      { "AUTH"      , '5', "USER"      , [this](){ SendCommand("USER", iUserName); }    },            
       // USER states
-      { "USER"      , '1', "USER",       [this](){ }                                    },
-      { "USER"      , '2', "READY",      [this](){ }                                    },
-      { "USER"      , '3', "PASS",       [this](){ SendCommand("PASS", iPassword); }    },
-      { "USER"      , '4', "USER",       [this](){ }                                    },
-      { "USER"      , '5', "USER",       [this](){ }                                    },
+      { "USER"      , '1', "USER"      , [this](){ }                                    },
+      { "USER"      , '2', "READY"     , [this](){ }                                    },
+      { "USER"      , '3', "PASS"      , [this](){ SendCommand("PASS", iPassword); }    },
+      { "USER"      , '4', "USER"      , [this](){ }                                    },
+      { "USER"      , '5', "USER"      , [this](){ }                                    },
       // PASS states
-      { "PASS"      , '1', "USER",       [this]() { ProcessLoginEvent(false); }          },
+      { "PASS"      , '1', "USER"      , [this]() { ProcessLoginEvent(false); }          },
       { "PASS"      , '2', "READY" ,     [this]() { ProcessLoginEvent(true); }          },
       { "PASS"      , '3', "ACCT" ,      [this]() { SendCommand("ACCT");}               },
       { "PASS"      , '4', "USER",       [this]() { ProcessLoginEvent(false); }          },

@@ -73,10 +73,6 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         return nullptr;
       }
 
-      #ifdef linux
-      if (!b) return nullptr;
-      #endif
-
       Context *ctx = (Context *) calloc(1, sizeof(Context));
 
       ctx->type = EIOTYPE::READ;

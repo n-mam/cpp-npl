@@ -247,15 +247,17 @@ class CDeviceSocket : public CDevice
     virtual void OnConnect() override
     {
       CDevice::OnConnect();
-      Read();
       #ifdef WIN32
-       setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
+      CDevice::Read();
+      setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
       #endif
     }
 
     virtual void OnRead(const uint8_t *b, size_t n) override
     {
+      #ifdef WIN32
       CDevice::Read();
+      #endif
 
       if (ssl)
       {

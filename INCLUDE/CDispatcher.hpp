@@ -137,8 +137,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
           void *k = e.data.ptr;
 
-          uint8_t *rbuf = (uint8_t *) calloc(1, 10);
-
           if (e.events & EPOLLOUT)
           {
             if (!((CSubject *)k)->IsConnected())
@@ -151,7 +149,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           
           if (e.events & EPOLLIN)
           {
-            ctx = (NPL::Context *)((CSubject *)k)->Read(rbuf, 10);
+            ctx = (NPL::Context *)((CSubject *)k)->Read();
           }
 
           if (!ctx) continue;
@@ -186,7 +184,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           if ((void *)o.get() == (void *)k)
           {
             std::cout << unsigned(ctx->type) << " " << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << ctx->n << "\n";            
-            
+
             ul.unlock();
 
             if (ctx->type == EIOTYPE::READ)
