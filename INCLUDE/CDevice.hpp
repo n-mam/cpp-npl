@@ -30,7 +30,7 @@ struct Context
     unsigned long  n;
 };
 
-constexpr uint32_t DEVICE_BUFFER_SIZE = 10;
+constexpr uint32_t DEVICE_BUFFER_SIZE = 16;
 
 class CDevice : public CSubject<uint8_t, uint8_t>
 {
@@ -102,7 +102,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
-        std::cout << "WriteFile failed : " << GetLastError() << "\n";
+        std::cout << "ReadFile failed : " << GetLastError() << "\n";
       }
 
       return nullptr;

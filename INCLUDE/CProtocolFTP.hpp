@@ -79,6 +79,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       SetDCProtLevel(P);
 
+      iCmdQ.emplace_back("TYPE", "I", "", nullptr, nullptr);
+
       iCmdQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
       iCmdQ.emplace_back("LIST", fRemote, "", nullptr, cbk);
@@ -199,10 +201,10 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       { "PASV"      , '4', "READY"     , [this]() { SkipCommand(2);        }            },
       { "PASV"      , '5', "READY"     , [this]() { SkipCommand(2);        }            },
       // DATA command (LIST, RETR, STOR) states
-      { "DATA"      , '1', "DATA"      , [this] () { ProcessDataCmdResponse('1'); }     },
-      { "DATA"      , '2', "DATA"      , [this] () { ProcessDataCmdResponse('2'); }     },
-      { "DATA"      , '4', "READY"     , [this] () { ProcessDataCmdResponse('4'); }     },
-      { "DATA"      , '5', "READY"     , [this] () { ProcessDataCmdResponse('5'); }     },
+      { "DATA"      , '1', "1yz"       , [this] () { ProcessDataCmdResponse('1'); }     },
+      { "DATA"      , '2', "2yz"       , [this] () { ProcessDataCmdResponse('2'); }     },
+      { "DATA"      , '4', "4yz"       , [this] () { ProcessDataCmdResponse('4'); }     },
+      { "DATA"      , '5', "5yz"       , [this] () { ProcessDataCmdResponse('5'); }     },
       { "GEN"       , '1', "READY"     , [this] () { ProcessGenCmdEvent();  }           },
       { "GEN"       , '2', "READY"     , [this] () { ProcessGenCmdEvent();  }           },
       { "GEN"       , '3', "READY"     , [this] () { ProcessGenCmdEvent();  }           },

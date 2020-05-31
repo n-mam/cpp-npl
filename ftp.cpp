@@ -2,21 +2,26 @@
 
 #include <npl.hpp>
 
-int main(void)
+int main(int argc, char *argv[])
 {
+  if (argc != 3)
+  {
+    std::cout << "usage : ftp <host> <port>\n";
+    return 0;
+  }
+
+  auto host = std::string(argv[1]);
+  auto port = std::stoi(argv[2]);
+
   /**
    * Create an FTP object.
    */
-  auto ftp = NPL::make_ftp("127.0.0.1", 21, NPL::FTPS::Explicit);
+  auto ftp = NPL::make_ftp(host, port, NPL::FTPS::Explicit);
 
   /**
    * Set the login credentials.
    */
-  #ifdef linux
-    ftp->SetCredentials("ftpuser", "ftpuser");
-  #else
-    ftp->SetCredentials("anonymous", "welcome123");
-  #endif
+  ftp->SetCredentials("ftpuser", "ftpuser");
 
   /**
    * Start the protocol. This would asynchronously
