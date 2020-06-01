@@ -167,16 +167,13 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           if ((void *)o.get() == (void *)k)
           {
             #ifdef linux
-            if (e.events & EPOLLOUT)
-            {
-              if (!o->IsConnected())
-              {
-                ctx = (NPL::Context *) calloc(1, sizeof(NPL::Context));
-                ctx->type = EIOTYPE::INIT;
-              }
-            }
 
-            if (e.events & EPOLLIN)
+            if ((e.events & EPOLLOUT) && !o->IsConnected())
+            {
+              ctx = (NPL::Context *) calloc(1, sizeof(NPL::Context));
+              ctx->type = EIOTYPE::INIT;
+            }
+            else if (e.events & EPOLLIN)
             {
               ctx = (NPL::Context *) o->Read();
             }

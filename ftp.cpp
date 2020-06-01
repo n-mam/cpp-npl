@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     else
       std::cout << "Download complete.\n";
     return true;
-  }, "bootstrap-vcpkg.batt", "c:\\download.bat", protection);
+  }, "bootstrap-vcpkg.batt", "../download.bat", protection);
 
   /**
    * File upload. The lambda argument is an output callback which is invoked
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
    */
   ftp->Upload([](const char *b, size_t n) {
     return true;
-  }, "y.txt", "C:\\x.txt", protection);
+  }, "README.txt", "../README.md", protection);
 
   /**
    * Get the current directory

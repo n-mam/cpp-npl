@@ -8,6 +8,10 @@
 #include <assert.h>
 #include <inttypes.h>
 
+#ifdef linux
+#include <string.h>
+#endif
+
 namespace NPL {
 
 enum EIOTYPE : uint8_t
@@ -42,6 +46,30 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     CDevice(const std::string& aFilename, bool bCreateNew)
     {
+      bool fRet = false;
+
+      #ifdef linux
+
+        int flags = 0|O_RDWR ;
+
+        if (bCreateNew)
+        {
+          flags |= O_CREAT;
+        }
+
+        iFD = open(aFilename.c_str(), flags);
+      
+        if (iFD >= 0)
+        {
+          fRet = true;
+        }
+        else
+        {
+          std::cout << "CDevice() " << aFilename << ", Error : " << strerror(errno) << "\n";
+        }
+
+      #endif
+
       #ifdef WIN32
         iFD = CreateFileA(
           aFilename.c_str(),
@@ -54,13 +82,18 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
         if (iFD != INVALID_HANDLE_VALUE)
         {
-          iConnected = true;
+          fRet = true;
         }
         else
         {
           std::cout << GetLastError();
         }
-      #endif 
+      #endif
+
+      if (fRet)
+      {
+        iConnected = true;
+      }
     }
 
     virtual ~CDevice() {};
@@ -69,7 +102,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << "CDevice::Read() Not connected\n";
+        std::cout << (void *)this << " " << GetName() << " CDevice::Read() Not connected\n";
         return nullptr;
       }
 
