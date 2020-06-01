@@ -64,9 +64,9 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       return true;
     }
 
-    virtual void QueueCompletionPacket(void *ctx) override
+    virtual void QueuePendingContext(SPCSubject s, void *c) override
     {
-
+      iPendingContext.emplace_back(s, c);
     }
 
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)
@@ -87,6 +87,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         e.data.ptr = device.get();
 
         int rc = epoll_ctl(iEventPort, EPOLL_CTL_ADD, device->iFD, &e);
+
+        assert(rc == 0);
 
         if (rc == -1)
         {
@@ -120,6 +122,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
     FD iEventPort;
 
     std::thread iWorker;
+
+    std::list<std::tuple<SPCSubject, void *>> iPendingContext;
 
     void Worker(void)
     {
@@ -175,8 +179,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             if ((e.events & EPOLLOUT) && !o->IsConnected())
             {
-              ctx = (NPL::Context *) calloc(1, sizeof(NPL::Context));
-              ctx->type = EIOTYPE::INIT;
+              o->OnConnect();
             }
             else if (e.events & EPOLLIN)
             {
@@ -191,29 +194,15 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             ul.unlock();
 
-            if (ctx->type == EIOTYPE::READ)
+            ProcessContext(o, ctx);
+
+            if (iPendingContext.size())
             {
-              if (ctx->n != 0)
-              {
-                o->OnRead(ctx->b, ctx->n);
-                free((void *)ctx->b);
-              }
-              else
-              {
-                o->OnDisconnect();
-              }
-            }
-            else if (ctx->type == EIOTYPE::WRITE)
-            {
-              o->OnWrite(ctx->b, ctx->n);
-            }
-            else if (ctx->type == EIOTYPE::INIT)
-            {
-              o->OnConnect();
-            }
-            else
-            {
-              assert (false);
+              auto [ob, cx] = iPendingContext.front();
+
+              ProcessContext(ob, (Context *)cx);
+
+              iPendingContext.pop_front();
             }
 
             ul.lock();
@@ -223,12 +212,46 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         }
 
         ProcessMarkRemoveAllListeners();
-
-        free(ctx);
       }
 
       std::cout << "Dispatcher thread returning. Observers : " << iObservers.size() << "\n";
-    }    
+    }
+
+    void ProcessContext(SPCSubject o, Context *ctx)
+    {
+      assert(ctx);
+
+      if (ctx->type == EIOTYPE::READ)
+      {
+        if (ctx->n != 0)
+        {
+          o->OnRead(ctx->b, ctx->n);
+        }
+        else
+        {
+          o->OnDisconnect();
+        }
+      }
+      else if (ctx->type == EIOTYPE::WRITE)
+      {
+        o->OnWrite(ctx->b, ctx->n);
+      }
+      else if (ctx->type == EIOTYPE::INIT)
+      {
+        o->OnConnect();
+      }
+      else
+      {
+        assert (false);
+      }
+
+      if (ctx->b) 
+      {
+        free((void *)ctx->b);
+      }
+
+      free(ctx);
+    }
 };
 
 using SPCDispatcher = std::shared_ptr<CDispatcher>;

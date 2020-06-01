@@ -32,13 +32,13 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       iTarget = target;
     }
 
-    virtual void QueueCompletionPacket(void *ctx)
+    virtual void QueuePendingContext(SPCSubject s, void *c)
     {
       auto target = iTarget.lock();
 
       if (target)
       {
-        return target->QueueCompletionPacket(ctx);
+        return target->QueuePendingContext(s, c);
       }      
     }
 
