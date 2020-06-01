@@ -137,23 +137,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
           void *k = e.data.ptr;
 
-          if (e.events & EPOLLOUT)
-          {
-            if (!((CSubject *)k)->IsConnected())
-            {
-              ctx = (NPL::Context *) calloc(1, sizeof(NPL::Context));
-
-              ctx->type = EIOTYPE::INIT;
-            }
-          }
-          
-          if (e.events & EPOLLIN)
-          {
-            ctx = (NPL::Context *)((CSubject *)k)->Read();
-          }
-
-          if (!ctx) continue;
-
         #else
 
         LPOVERLAPPED o;
@@ -183,6 +166,25 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         {
           if ((void *)o.get() == (void *)k)
           {
+            #ifdef linux
+            if (e.events & EPOLLOUT)
+            {
+              if (!o->IsConnected())
+              {
+                ctx = (NPL::Context *) calloc(1, sizeof(NPL::Context));
+                ctx->type = EIOTYPE::INIT;
+              }
+            }
+
+            if (e.events & EPOLLIN)
+            {
+              ctx = (NPL::Context *) o->Read();
+            }
+
+            if (!ctx) continue;
+
+            #endif
+
             std::cout << unsigned(ctx->type) << " " << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << ctx->n << "\n";            
 
             ul.unlock();
