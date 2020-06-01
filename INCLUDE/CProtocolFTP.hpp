@@ -638,17 +638,14 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       if (cc)
       {
-        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(cc);
-
-        assert(sock);
-
-        sock->InitializeSSL([this] () {
-          if (iFTPS == FTPS::Explicit)
-          {
-            iProtocolState = "USER";
-            SendCommand("USER", iUserName);
-          }
-        });
+        std::dynamic_pointer_cast<CDeviceSocket>
+          (cc)->InitializeSSL([this] () {
+            if (iFTPS == FTPS::Explicit)
+            {
+              iProtocolState = "USER";
+              SendCommand("USER", iUserName);
+            }
+          });
       }
     }
 };

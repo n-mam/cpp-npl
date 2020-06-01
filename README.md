@@ -38,15 +38,24 @@ FTP example
 
 int main(void)
 {
+  if (argc != 3)
+  {
+    std::cout << "usage : ftp <host> <port>\n";
+    return 0;
+  }
+
+  auto host = std::string(argv[1]);
+  auto port = std::stoi(argv[2]);
+
   /**
    * Create an FTP object.
    */
-  auto ftp = NPL::make_ftp("127.0.0.1", 990, NPL::FTPS::Implicit);
+  auto ftp = NPL::make_ftp(host, port, NPL::FTPS::Explicit);
 
   /**
    * Set the login credentials.
    */
-  ftp->SetCredentials("anonymous", "welcome123");
+  ftp->SetCredentials("ftpuser", "ftpuser");
 
   /**
    * Start the protocol. This would asynchronously
@@ -54,20 +63,22 @@ int main(void)
    */
   ftp->StartProtocol();
 
+  DCProt protection = DCProt::Protected;
+
   /**
    * Directory listing. The lambda argument is an output callback 
    * which is invoked multiple times with chunks of directory list
    * data. A null "b" (buffer) pointer indicates that there's no 
    * more data. Returning false at any point terminates the transfer.
    */
-  std::string list;
-  ftp->List([&](const char *b, size_t n) {
+  ftp->ListDirectory(
+    [list = std::string("")] (const char *b, size_t n) mutable {
     if (b)
      list.append(std::string(b, n));
     else
      std::cout << list;
     return true;
-  });
+  }, "", protection);
 
   /**
    * Set the current directory
@@ -80,15 +91,15 @@ int main(void)
    * times with chunks of file data. A null "b" (buffer) pointer indicates 
    * that there's no more file data to download. Returning false at any point
    * terminates the transfer. local file arg is optional; if not specified then 
-   * downloaded file data can only be accesed via the callback.
+   * downloded data can only be accesed via the callback.
    */
   ftp->Download([](const char *b, size_t n) {
     if (b)
       std::cout << std::string(b, n);
     else
-      std::cout << "Download completed\n";
+      std::cout << "Download complete.\n";
     return true;
-  }, "bootstrap-vcpkg.bat", "", NPL::DCProt::Protected);
+  }, "bootstrap-vcpkg.batt", "c:\\download.bat", protection);
 
   /**
    * File upload. The lambda argument is an output callback which is invoked
@@ -100,7 +111,7 @@ int main(void)
    */
   ftp->Upload([](const char *b, size_t n) {
     return true;
-  }, "y.txt", "C:\\x.txt", NPL::DCProt::Clear);
+  }, "y.txt", "C:\\x.txt", protection);
 
   /**
    * Get the current directory
@@ -111,13 +122,15 @@ int main(void)
      */
   });
 
+  ftp->SetCurrentDir("/");
+
   /**
    * Quit the session. Sends FTP QUIT command
    * and triggeres the cleanup of "ftp" object
    */
   ftp->Quit();
- 
-  std::this_thread::sleep_for(std::chrono::milliseconds(8000));
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
   return 0;
 }
