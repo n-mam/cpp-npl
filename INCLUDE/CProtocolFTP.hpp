@@ -148,9 +148,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     uint64_t iCurrentFileOffset = 0;
 
-    SPCDevice iFileDevice = nullptr;
+    SPCSubject iFileDevice = nullptr;
 
-    SPCDeviceSocket iDataChannel = nullptr;
+    SPCSubject iDataChannel = nullptr;
 
     std::atomic_flag iCmdInProgress = ATOMIC_FLAG_INIT;
 
@@ -173,7 +173,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       TStateFn     iTransitionFn;
     };
 
-    Transition FSM[30] =
+    Transition FSM[32] =
     {
       // Connection states
       { "CONNECTED" , '1', "CONNECTED" , nullptr                                        },
@@ -202,9 +202,10 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       { "PASV"      , '5', "READY"     , [this]() { SkipCommand(2);        }            },
       // DATA command (LIST, RETR, STOR) states
       { "DATA"      , '1', "1yz"       , [this] () { ProcessDataCmdResponse('1'); }     },
-      { "DATA"      , '2', "2yz"       , [this] () { ProcessDataCmdResponse('2'); }     },
-      { "DATA"      , '4', "4yz"       , [this] () { ProcessDataCmdResponse('4'); }     },
-      { "DATA"      , '5', "5yz"       , [this] () { ProcessDataCmdResponse('5'); }     },
+      { "1yz"       , '2', "xyz"       , [this] () { ProcessDataCmdResponse('2'); }     },
+      { "1yz"       , '4', "xyz"       , [this] () { ProcessDataCmdResponse('4'); }     },      
+      { "DATA"      , '4', "xyz"       , [this] () { ProcessDataCmdResponse('4'); }     },
+      { "DATA"      , '5', "xyz"       , [this] () { ProcessDataCmdResponse('5'); }     },
       { "GEN"       , '1', "READY"     , [this] () { ProcessGenCmdEvent();  }           },
       { "GEN"       , '2', "READY"     , [this] () { ProcessGenCmdEvent();  }           },
       { "GEN"       , '3', "READY"     , [this] () { ProcessGenCmdEvent();  }           },
@@ -413,46 +414,53 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       D->AddEventListener(iDataChannel)->AddEventListener(observer);
 
-      iDataChannel->SetHostAndPort(host, port);
+      auto dc = std::dynamic_pointer_cast<CDeviceSocket>(iDataChannel);
 
-      iDataChannel->StartSocketClient();
+      dc->SetHostAndPort(host, port);
+
+      dc->StartSocketClient();
     }
 
-    virtual void ProcessDataCmdResponse(char code = '0')
+    virtual void ProcessDataCmdResponse(char code)
     {
       if (IsPositivePreliminaryReply(code))
       {
         if (iDCProt == DCProt::Protected)
         {
-          iDataChannel->InitializeSSL(
-            [this] () {
-              TriggerDataTransfer();
-            });
+          std::dynamic_pointer_cast<CDeviceSocket>
+            (iDataChannel)->InitializeSSL(
+              [this] () {
+                TriggerDataTransfer();
+              });
         }
         else
         {
           TriggerDataTransfer();
         }
       }
-
-      if (!iDataChannel->IsConnected() || 
-           (!IsPositiveCompletionReply(code) && 
-            !IsPositivePreliminaryReply(code)))
+      else if (IsPositiveCompletionReply(code))
       {
-        ResetDataChannel();
+        if (!iDataChannel)
+        {
+          SkipCommand();
+        }
+      }
+      else
+      {
+        if (iDataChannel)
+        {
+          ResetSubject(iDataChannel);
+        }  
 
         if (iFileDevice)
         {
-          iFileDevice->MarkRemoveAllListeners();
-          iFileDevice->MarkRemoveSelfAsListener();
-          iFileDevice.reset();
+          ResetSubject(iFileDevice);
         }
 
-        iCmdQ.pop_front();
-
-        iCmdInProgress.clear();
-
-        ProcessNextCmd();
+        if (iProtocolState == "xyz")
+        {
+          SkipCommand();
+        }
       }
     }
 
@@ -509,7 +517,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         }
         else
         {
-          iDataChannel->StopSocket();
+          std::dynamic_pointer_cast<CDeviceSocket>(iDataChannel)->StopSocket();
           return;
         }
       }
@@ -535,7 +543,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         tcbk(nullptr, 0);
       }
 
-      ProcessDataCmdResponse();
+      ProcessDataCmdResponse('0');
     }
 
     virtual void OnFileRead(const uint8_t *b, size_t n)
@@ -550,7 +558,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         }
         else
         {
-          iDataChannel->StopSocket();
+          std::dynamic_pointer_cast<CDeviceSocket>(iDataChannel)->StopSocket();
           return;          
         }
       }
@@ -568,7 +576,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void OnFileDisconnect(void)
     {
-      iDataChannel->StopSocket();
+      std::dynamic_pointer_cast<CDeviceSocket>(iDataChannel)->StopSocket();
     }
 
     virtual void TriggerDataTransfer(void)
@@ -595,13 +603,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         iCmdQ.clear();
         iCmdInProgress.clear();
       }      
-    }
-
-    virtual void ResetDataChannel(void)
-    {
-      iDataChannel->MarkRemoveAllListeners();
-      iDataChannel->MarkRemoveSelfAsListener();
-      iDataChannel.reset();
     }
 
     virtual bool IsTransferCommand(const std::string& cmd)

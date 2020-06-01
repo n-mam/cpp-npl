@@ -29,7 +29,7 @@ class CDeviceSocket : public CDevice
       std::cout << "~" << iName << " : shutdown socket sd_recv.\n";
     }
 
-    void StopSocket(void)
+    virtual void StopSocket(void)
     {
       if (!iStopped)
       {
@@ -53,7 +53,7 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    void StartSocketClient(void)
+    virtual void StartSocketClient(void)
     {
       assert(iHost.size() && iPort);
 
@@ -119,7 +119,7 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
-    void StartSocketServer(void)
+    virtual void StartSocketServer(void)
     {
       assert(iPort);
 
@@ -154,7 +154,7 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
-    bool SetSocketBlockingEnabled(bool blocking)
+    virtual bool SetSocketBlockingEnabled(bool blocking)
     {
       bool fret = false;
 
@@ -169,7 +169,7 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
-    bool IsClientSocket(void)
+    virtual bool IsClientSocket(void)
     {
       bool fRet = false;
 
@@ -181,13 +181,13 @@ class CDeviceSocket : public CDevice
       return fRet;
     }
 
-    void SetHostAndPort(const std::string& aHostname, int aPort)
+    virtual void SetHostAndPort(const std::string& aHostname, int aPort)
     {
       iHost = aHostname;
       iPort = aPort;
     }
 
-    void CheckPeerSSLShutdown()
+    virtual void CheckPeerSSLShutdown()
     {
       int flag = SSL_get_shutdown(ssl);
 
@@ -202,7 +202,7 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    int64_t UpdateWBIO()
+    virtual int64_t UpdateWBIO()
     {
       CheckPeerSSLShutdown();
 
@@ -220,7 +220,7 @@ class CDeviceSocket : public CDevice
       return -1;
     }
 
-    void InitializeSSL(TOnHandshake cbk = nullptr)
+    virtual void InitializeSSL(TOnHandshake cbk = nullptr)
     {
       iOnHandShake = cbk;
       ctx = SSL_CTX_new(TLS_client_method());

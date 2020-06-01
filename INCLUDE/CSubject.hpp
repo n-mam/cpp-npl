@@ -190,6 +190,13 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 
     std::vector<SPCSubject> iObservers;
 
+    virtual void ResetSubject(SPCSubject& subject)
+    {
+      subject->MarkRemoveAllListeners();
+      subject->MarkRemoveSelfAsListener();
+      subject.reset();
+    }
+
     virtual void ProcessMarkRemoveAllListeners(void)
     {
       if (this->iMarkRemoveAllListeners)
