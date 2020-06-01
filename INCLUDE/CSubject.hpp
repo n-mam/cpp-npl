@@ -32,9 +32,14 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       iTarget = target;
     }
 
-    virtual WPCSubject GetTarget(void)
+    virtual void QueueCompletionPacket(void *ctx)
     {
-      return iTarget;
+      auto target = iTarget.lock();
+
+      if (target)
+      {
+        return target->QueueCompletionPacket(ctx);
+      }      
     }
 
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)

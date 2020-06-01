@@ -64,6 +64,11 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       return true;
     }
 
+    virtual void QueueCompletionPacket(void *ctx) override
+    {
+
+    }
+
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)
     {
       CSubject::AddEventListener(observer);

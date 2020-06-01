@@ -86,7 +86,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         }
         else
         {
-          std::cout << GetLastError();
+          std::cout << "CDevice() " << aFilename << ", Error : " << GetLastError() << "\n";
         }
       #endif
 
