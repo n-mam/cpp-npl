@@ -22,6 +22,11 @@ class CDeviceSocket : public CDevice
       iFD = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     }
 
+    CDeviceSocket(FD aSocket)
+    {
+      iFD = aSocket;
+    }
+
     ~CDeviceSocket()
     {
       StopSocket();
@@ -85,7 +90,7 @@ class CDeviceSocket : public CDevice
 
         Context *ctx = (Context *) calloc(1, sizeof(Context));
 
-        ctx->type = EIOTYPE::CONNECTED;
+        ctx->type = EIOTYPE::CONNECT;
 
         sockaddr_in sa;
         ZeroMemory(&sa, sizeof(sa));
@@ -139,23 +144,26 @@ class CDeviceSocket : public CDevice
       }
 
       #ifdef linux
-        assert(false);
+      // epoll accept happens in dispatcher
       #endif
 
       #ifdef WIN32
-        auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
 
-        FD as = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
 
         uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(Context));
 
-        ((Context *)b)->type = EIOTYPE::ACCEPTED;
+        ((Context *)b)->type = EIOTYPE::ACCEPT;
+
+        ((Context *)b)->ls = iFD;
+
+        ((Context *)b)->as = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
         DWORD bytesReceived;
 
         bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
           (SOCKET)iFD,
-          (SOCKET)as,
+          (SOCKET)(((Context *)b)->as),
           b + sizeof(Context),
           0,
           sizeof(SOCKADDR_STORAGE) + 16,

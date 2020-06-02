@@ -16,8 +16,8 @@ namespace NPL {
 
 enum EIOTYPE : uint8_t
 {
-  ACCEPTED = 0,
-  CONNECTED,
+  ACCEPT = 0,
+  CONNECT,
   READ,
   WRITE,
   IOCTL,
@@ -28,10 +28,12 @@ struct Context
   #ifdef linux
 
   #else
-    OVERLAPPED     ol;
+    OVERLAPPED      ol;
+    FD              ls;
+    FD              as;
   #endif
-    void          * k;
     EIOTYPE         type;
+    void          * k;
     const uint8_t * b;
     unsigned long   n;
 };
