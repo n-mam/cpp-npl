@@ -44,7 +44,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         iWorker = std::thread(&CDispatcher::Worker, this);
       }
 
-      iDControl->SetName("LS");
+      iDControl->SetName("DC-LS");
 
       iDControl->StartSocketServer();
       /**
@@ -56,7 +56,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
       this->AddEventListener(iDClient);
 
-      iDClient->SetName("DCC");
+      iDClient->SetName("DC-CT");
 
       iDClient->StartSocketClient();      
     }
@@ -211,7 +211,43 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             ul.unlock();
 
-            ProcessContext(o.get(), ctx);
+            if (ctx->type == EIOTYPE::READ)
+            {
+              if (ctx->n != 0)
+              {
+                o->OnRead(ctx->b, ctx->n);
+              }
+              else
+              {
+                o->OnDisconnect();
+              }
+            }
+            else if (ctx->type == EIOTYPE::WRITE)
+            {
+              o->OnWrite(ctx->b, ctx->n);
+            }
+            else if (ctx->type == EIOTYPE::CONNECT)
+            {
+              o->OnConnect();
+            }
+            else if (ctx->type == EIOTYPE::ACCEPT)
+            {
+              #ifdef WIN32
+              setsockopt((SOCKET)ctx->as, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(ctx->ls), sizeof(ctx->ls));
+              #endif
+              AcceptConnections(ctx->as);
+            }
+            else
+            {
+              assert (false);
+            }
+
+            if (ctx->b) 
+            {
+              free((void *)ctx->b);
+            }
+
+            free(ctx);
 
             ul.lock();
 
@@ -225,38 +261,9 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       std::cout << "Dispatcher thread returning. Observers : " << iObservers.size() << "\n";
     }
 
-    void ProcessContext(CSubject *o, Context *ctx)
+    void AcceptConnections(FD asock)
     {
-      assert(ctx);
-
-      if (ctx->type == EIOTYPE::READ)
-      {
-        if (ctx->n != 0)
-        {
-          o->OnRead(ctx->b, ctx->n);
-        }
-        else
-        {
-          o->OnDisconnect();
-        }
-      }
-      else if (ctx->type == EIOTYPE::WRITE)
-      {
-        o->OnWrite(ctx->b, ctx->n);
-      }
-      else if (ctx->type == EIOTYPE::CONNECT)
-      {
-        o->OnConnect();
-      }
-      else if (ctx->type == EIOTYPE::ACCEPT)
-      {
-        std::cout << "Client connected\n";
-
-        #ifdef WIN32
-
-        setsockopt((SOCKET)ctx->as, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(ctx->ls), sizeof(ctx->ls));
-
-        auto as = std::make_shared<CDeviceSocket>(ctx->as);
+      auto as = std::make_shared<CDeviceSocket>(asock);
 
         auto observer = std::make_shared<CListener>(
           nullptr,
@@ -270,20 +277,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         this->AddEventListener(as)->AddEventListener(observer);
 
         as->SetName("AS");
-
-        #endif
-      }
-      else
-      {
-        assert (false);
-      }
-
-      if (ctx->b) 
-      {
-        free((void *)ctx->b);
-      }
-
-      free(ctx);
     }
 
     void OnDispatcherControlRead(const uint8_t *b, size_t n)

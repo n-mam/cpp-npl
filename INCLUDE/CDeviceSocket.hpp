@@ -66,7 +66,7 @@ class CDeviceSocket : public CDevice
 
       #ifdef linux
 
-        SetSocketBlockingEnabled(false);
+        SetSocketBlockingEnabled(iFD, false);
 
         sockaddr_in sa;
 
@@ -143,10 +143,6 @@ class CDeviceSocket : public CDevice
         fRet = listen((SOCKET)iFD, SOMAXCONN);
       }
 
-      #ifdef linux
-      // epoll accept happens in dispatcher
-      #endif
-
       #ifdef WIN32
 
         auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
@@ -173,18 +169,32 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
-    virtual bool SetSocketBlockingEnabled(bool blocking)
+    #ifdef linux
+    virtual void * AcceptSocket(void)
+    {
+      Context *ctx = (Context *) calloc(1, sizeof(Context));
+      ctx->ls = iFD;
+      struct sockaddr asa;
+      socklen_t len = sizeof(struct sockaddr);
+      ctx->as = accept(iFD, &asa, &len);
+      SetSocketBlockingEnabled(ctx->as, false);
+      ctx->type = EIOTYPE::ACCEPT;
+      return ctx;
+    }
+    #endif
+
+    virtual bool SetSocketBlockingEnabled(FD sock, bool blocking)
     {
       bool fret = false;
 
       #ifdef linux
-        int flags = fcntl(iFD, F_GETFL, 0);
+        int flags = fcntl(sock, F_GETFL, 0);
         if (flags == -1) return false;
         flags = blocking ? (flags & ~O_NONBLOCK) : (flags | O_NONBLOCK);
-        return (fcntl((SOCKET)iFD, F_SETFL, flags) == 0) ? true : false;
+        return (fcntl((SOCKET)sock, F_SETFL, flags) == 0) ? true : false;
       #else
         unsigned long mode = blocking ? 0 : 1;
-        return (ioctlsocket((SOCKET)iFD, FIONBIO, &mode) == 0) ? true : false;
+        return (ioctlsocket((SOCKET)sock, FIONBIO, &mode) == 0) ? true : false;
       #endif
     }
 
@@ -221,7 +231,7 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    virtual int64_t UpdateWBIO()
+    virtual void UpdateWBIO()
     {
       CheckPeerSSLShutdown();
 
@@ -233,10 +243,8 @@ class CDeviceSocket : public CDevice
       {
         int rc = BIO_read(wbio, buf, pending);
 
-        return CDevice::Write(buf, pending);
+        CDevice::Write(buf, pending);
       }
-
-      return -1;
     }
 
     virtual void InitializeSSL(TOnHandshake cbk = nullptr)
@@ -333,16 +341,28 @@ class CDeviceSocket : public CDevice
       CDevice::OnWrite(b, n);
     }
 
-    virtual int64_t Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
+    {
+      if (GetName() == "DC-LS")
+      {
+        return AcceptSocket();
+      }
+      else
+      {
+        return CDevice::Read(b, l, o);
+      }
+    }
+
+    virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
       if (ssl)
       {
         SSL_write(ssl, b, l);
-        return UpdateWBIO();
+        UpdateWBIO();
       }
       else
       {
-        return CDevice::Write(b, l);
+        CDevice::Write(b, l);
       }
     }
 

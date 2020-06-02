@@ -29,10 +29,10 @@ struct Context
 
   #else
     OVERLAPPED      ol;
-    FD              ls;
-    FD              as;
   #endif
     EIOTYPE         type;
+    FD              ls;
+    FD              as;
     void          * k;
     const uint8_t * b;
     unsigned long   n;
@@ -147,12 +147,12 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       #endif
     }
 
-    virtual int64_t Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
+    virtual void Write(const uint8_t *b = nullptr , size_t l = 0, uint64_t o = 0) override
     {
       if (!iConnected)
       {
         std::cout << "CDevice::Write() Not connected\n";
-        return -1;
+        return;
       }
 
       assert(b && l);
@@ -165,7 +165,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
-      return write(iFD, b, l);
+      write(iFD, b, l);
 
       #else
 
@@ -178,8 +178,6 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       {
         std::cout << "WriteFile failed : " << GetLastError() << "\n";
       }
-
-      return -1;
 
       #endif
     }
