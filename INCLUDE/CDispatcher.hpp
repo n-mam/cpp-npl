@@ -3,9 +3,10 @@
 
 #include <CDevice.hpp>
 #include <CSubject.hpp>
+#include <CDeviceSocket.hpp>
 
-#include <iostream>
 #include <thread>
+#include <iostream>
 
 #ifdef linux
  #include <unistd.h>
@@ -27,12 +28,27 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         iEventPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
       #endif
 
+      iDispatchCtrlSvr = std::make_shared<CDeviceSocket>();
+      iDispatchCtrlClt = std::make_shared<CDeviceSocket>();
+
+      iDispatchCtrlSvr->SetHostAndPort("", 1234);
+      iDispatchCtrlClt->SetHostAndPort("127.0.0.1", 1234);
+
+      this->AddEventListener(iDispatchCtrlSvr);
+      this->AddEventListener(iDispatchCtrlClt);
+
       if (!iWorker.joinable())
       {
         iWorker = std::thread(&CDispatcher::Worker, this);
       }
 
       iName = "D";
+
+      iDispatchCtrlSvr->SetName("CtrlSvr");
+      iDispatchCtrlClt->SetName("CtrlClt");
+
+      iDispatchCtrlSvr->StartSocketServer();
+      iDispatchCtrlClt->StartSocketClient();      
     }
 
     ~CDispatcher()
@@ -66,7 +82,9 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
     virtual void QueuePendingContext(SPCSubject s, void *c) override
     {
-      iPendingContext.emplace_back(s, c);
+      ((Context *)c)->k = s.get();
+
+      iDispatchCtrlClt->Write((const uint8_t *)c, sizeof(Context));
     }
 
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)
@@ -123,13 +141,17 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
     std::thread iWorker;
 
-    std::list<std::tuple<SPCSubject, void *>> iPendingContext;
+    SPCDeviceSocket iDispatchCtrlSvr;
+
+    SPCDeviceSocket iDispatchCtrlClt;
 
     void Worker(void)
     {
       while (true)
       {
         Context *ctx = nullptr;
+
+        void *k = nullptr;
 
         unsigned long n;
 
@@ -144,28 +166,34 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             continue;
           }
 
-          void *k = e.data.ptr;
+          k = e.data.ptr;
 
-        #else
+        #endif
 
-        LPOVERLAPPED o;
-        ULONG_PTR k;
+        #ifdef WIN32
 
-        bool fRet = GetQueuedCompletionStatus(iEventPort, &n, &k, &o, INFINITE);
+          LPOVERLAPPED o;
 
-        if (!fRet)
-        {
-          std::cout << (void *)k  << " GQCS failed : " << GetLastError() << "\n";
-        }
+          bool fRet = GetQueuedCompletionStatus(iEventPort, &n, (PULONG_PTR) &k, &o, INFINITE);
 
-        if (n == 0 && k == 0 && o == 0)
-        {
-          break;
-        }
+          if (!fRet)
+          {
+            std::cout << k  << " GQCS failed : " << GetLastError() << "\n";
+          }
 
-        ctx = (Context *) o;
+          if (n == 0 && k == 0 && o == 0)
+          {
+            break;
+          }
 
-        ctx->n = n;
+          ctx = (Context *) o;
+
+          ctx->n = n;
+
+          if (k == (void *)iDispatchCtrlClt.get())
+          {
+            k = ctx->k;
+          }
 
         #endif
 
@@ -173,7 +201,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         for (auto& o : iObservers)
         {
-          if ((void *)o.get() == (void *)k)
+          if (k == (void *)o.get())
           {
             #ifdef linux
 
@@ -195,15 +223,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             ul.unlock();
 
             ProcessContext(o, ctx);
-
-            if (iPendingContext.size())
-            {
-              auto [ob, cx] = iPendingContext.front();
-
-              ProcessContext(ob, (Context *)cx);
-
-              iPendingContext.pop_front();
-            }
 
             ul.lock();
 
@@ -236,9 +255,13 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       {
         o->OnWrite(ctx->b, ctx->n);
       }
-      else if (ctx->type == EIOTYPE::INIT)
+      else if (ctx->type == EIOTYPE::CONNECTED)
       {
         o->OnConnect();
+      }
+      else if (ctx->type == EIOTYPE::ACCEPTED)
+      {
+        std::cout << "Client connected\n";
       }
       else
       {

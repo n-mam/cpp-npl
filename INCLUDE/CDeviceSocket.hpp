@@ -9,6 +9,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+namespace NPL {
+
 using TOnHandshake = std::function<void (void)>;
 
 class CDeviceSocket : public CDevice
@@ -83,7 +85,7 @@ class CDeviceSocket : public CDevice
 
         Context *ctx = (Context *) calloc(1, sizeof(Context));
 
-        ctx->type = EIOTYPE::INIT;
+        ctx->type = EIOTYPE::CONNECTED;
 
         sockaddr_in sa;
         ZeroMemory(&sa, sizeof(sa));
@@ -136,6 +138,10 @@ class CDeviceSocket : public CDevice
         fRet = listen((SOCKET)iFD, SOMAXCONN);
       }
 
+      #ifdef linux
+        assert(false);
+      #endif
+
       #ifdef WIN32
         auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
 
@@ -143,14 +149,19 @@ class CDeviceSocket : public CDevice
 
         uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(Context));
 
+        ((Context *)b)->type = EIOTYPE::ACCEPTED;
+
         DWORD bytesReceived;
 
         bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
-          (SOCKET)iFD, (SOCKET)as, b, 0,
+          (SOCKET)iFD,
+          (SOCKET)as,
+          b + sizeof(Context),
+          0,
           sizeof(SOCKADDR_STORAGE) + 16,
           sizeof(SOCKADDR_STORAGE) + 16,
           &bytesReceived,
-          (LPOVERLAPPED)(b + (2 * (sizeof(SOCKADDR_STORAGE) + 16))));
+          (LPOVERLAPPED)b);
       #endif
     }
 
@@ -370,6 +381,8 @@ class CDeviceSocket : public CDevice
 };
 
 using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
+
+} //namespace NPL
 
 #ifdef WIN32
  WSADATA wsaData;

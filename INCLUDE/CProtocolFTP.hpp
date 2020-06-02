@@ -559,7 +559,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         else
         {
           std::dynamic_pointer_cast<CDeviceSocket>(iDataChannel)->StopSocket();
-          return;          
+          return;
         }
       }
 
@@ -567,7 +567,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       iCurrentFileOffset += n;
 
-      iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
+      auto ctx = iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
+
+      #ifdef linux
+      QueuePendingContext(iFileDevice, ctx);
+      #endif
     }
 
     virtual void OnFileWrite(const uint8_t *b, size_t n)
@@ -585,7 +589,10 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       if (cmd == "STOR")
       {
-        iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
+        auto ctx = iFileDevice->Read(nullptr, 0, iCurrentFileOffset);
+        #ifdef linux
+        QueuePendingContext(iFileDevice, ctx);
+        #endif        
       }
     }
 

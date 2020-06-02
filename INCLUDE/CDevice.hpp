@@ -16,10 +16,11 @@ namespace NPL {
 
 enum EIOTYPE : uint8_t
 {
-  INIT = 0,
-  READ = 1,
-  WRITE = 2,
-  IOCTL = 3,
+  ACCEPTED = 0,
+  CONNECTED,
+  READ,
+  WRITE,
+  IOCTL,
 };
 
 struct Context
@@ -29,9 +30,10 @@ struct Context
   #else
     OVERLAPPED     ol;
   #endif
-    EIOTYPE        type;
-    const uint8_t *b;
-    unsigned long  n;
+    void          * k;
+    EIOTYPE         type;
+    const uint8_t * b;
+    unsigned long   n;
 };
 
 constexpr uint32_t DEVICE_BUFFER_SIZE = 16;
