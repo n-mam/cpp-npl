@@ -50,54 +50,49 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     CDevice(const std::string& aFilename, bool bCreateNew)
     {
-      bool fRet = false;
-
       #ifdef linux
 
-        int flags = 0|O_RDWR ;
+      int flags = 0|O_RDWR ;
 
-        if (bCreateNew)
-        {
-          flags |= O_CREAT;
-        }
+      if (bCreateNew)
+      {
+        flags |= O_CREAT;
+      }
 
-        iFD = open(aFilename.c_str(), flags);
+      iFD = open(aFilename.c_str(), flags);
       
-        if (iFD >= 0)
-        {
-          fRet = true;
-        }
-        else
-        {
-          std::cout << "CDevice() " << aFilename << ", Error : " << strerror(errno) << "\n";
-        }
+      if (iFD >= 0)
+      {
+        iConnected = true;
+      }
+      else
+      {
+        std::cout << "CDevice() " << aFilename << ", Error : " << strerror(errno) << "\n";
+      }
 
       #endif
 
       #ifdef WIN32
-        iFD = CreateFileA(
-          aFilename.c_str(),
-          GENERIC_READ|GENERIC_WRITE,
-          FILE_SHARE_READ|FILE_SHARE_WRITE,
-          NULL,
-          (bCreateNew ? CREATE_ALWAYS : OPEN_ALWAYS),
-          FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
-          NULL);
+      
+      iFD = CreateFileA(
+        aFilename.c_str(),
+        GENERIC_READ|GENERIC_WRITE,
+        FILE_SHARE_READ|FILE_SHARE_WRITE,
+        NULL,
+        (bCreateNew ? CREATE_ALWAYS : OPEN_ALWAYS),
+        FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+        NULL);
 
-        if (iFD != INVALID_HANDLE_VALUE)
-        {
-          fRet = true;
-        }
-        else
-        {
-          std::cout << "CDevice() " << aFilename << ", Error : " << GetLastError() << "\n";
-        }
-      #endif
-
-      if (fRet)
+      if (iFD != INVALID_HANDLE_VALUE)
       {
         iConnected = true;
       }
+      else
+      {
+        std::cout << "CDevice() " << aFilename << ", Error : " << GetLastError() << "\n";
+      }
+
+      #endif
     }
 
     virtual ~CDevice() {};
@@ -106,7 +101,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << (void *)this << " " << GetName() << " CDevice::Read() Not connected\n";
+        std::cout << (void *)this << " " << GetName() << " CDevice::Read() not connected\n";
         return nullptr;
       }
 
@@ -139,7 +134,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
-        std::cout << "ReadFile failed : " << GetLastError() << "\n";
+        std::cout << (void *)this << " " << GetName() << " ReadFile failed : " << GetLastError() << "\n";
       }
 
       return nullptr;
@@ -151,7 +146,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << "CDevice::Write() Not connected\n";
+        std::cout << (void *)this << " " << GetName() << " CDevice::Wrtite() not connected\n";
         return;
       }
 
@@ -176,7 +171,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
-        std::cout << "WriteFile failed : " << GetLastError() << "\n";
+        std::cout << (void *)this << " " << GetName() << " WriteFile failed : " << GetLastError() << "\n";
       }
 
       #endif
