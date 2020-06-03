@@ -169,20 +169,6 @@ class CDeviceSocket : public CDevice
       #endif
     }
 
-    #ifdef linux
-    virtual void * AcceptSocket(void)
-    {
-      Context *ctx = (Context *) calloc(1, sizeof(Context));
-      ctx->ls = iFD;
-      struct sockaddr asa;
-      socklen_t len = sizeof(struct sockaddr);
-      ctx->as = accept(iFD, &asa, &len);
-      SetSocketBlockingEnabled(ctx->as, false);
-      ctx->type = EIOTYPE::ACCEPT;
-      return ctx;
-    }
-    #endif
-
     virtual bool SetSocketBlockingEnabled(FD sock, bool blocking)
     {
       bool fret = false;
@@ -343,14 +329,14 @@ class CDeviceSocket : public CDevice
 
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
+      #ifdef linux
       if (GetName() == "DC-LS")
       {
         return AcceptSocket();
       }
-      else
-      {
-        return CDevice::Read(b, l, o);
-      }
+      #endif
+
+      return CDevice::Read(b, l, o);
     }
 
     virtual void Write(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
@@ -366,6 +352,20 @@ class CDeviceSocket : public CDevice
       }
     }
 
+    #ifdef linux
+    virtual void * AcceptSocket(void)
+    {
+      Context *ctx = (Context *) calloc(1, sizeof(Context));
+      ctx->ls = iFD;
+      struct sockaddr asa;
+      socklen_t len = sizeof(struct sockaddr);
+      ctx->as = accept(iFD, &asa, &len);
+      SetSocketBlockingEnabled(ctx->as, false);
+      ctx->type = EIOTYPE::ACCEPT;
+      return ctx;
+    }
+    #endif
+    
   private:
 
     int iPort = 0;

@@ -186,6 +186,27 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
 };
 
+const char EIOToChar(EIOTYPE t)
+{
+  switch(t)
+  {
+    case EIOTYPE::ACCEPT:
+     return 'A';
+     break;
+    case EIOTYPE::CONNECT:
+     return 'C';
+     break;
+    case EIOTYPE::READ:
+     return 'R';    
+     break;
+    case EIOTYPE::WRITE:
+     return 'W';
+     break;
+    default:
+     return 'Z';
+  }
+}
+
 using SPCDevice = std::shared_ptr<CDevice>;
 using WPCDevice = std::weak_ptr<CDevice>;
 

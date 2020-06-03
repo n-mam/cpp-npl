@@ -182,6 +182,14 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         #endif
 
+        ProcessContext(k, ctx);
+      }
+
+      std::cout << "Dispatcher thread returning. Observers : " << iObservers.size() << "\n";
+    }
+
+    void ProcessContext(void *k, Context *ctx)
+    {
         std::unique_lock<std::mutex> ul(iLock);
 
         for (auto& o : iObservers)
@@ -207,7 +215,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             #endif
 
-            std::cout << unsigned(ctx->type) << " " << o->GetName() << " : " << (void *)k << " fRet " << fRet << ", n " << ctx->n << "\n";            
+            std::cout << NPL::EIOToChar(ctx->type) << " " << o->GetName() << " : " << (void *)k << ", n " << ctx->n << "\n";            
 
             ul.unlock();
 
@@ -216,6 +224,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
               if (ctx->n != 0)
               {
                 o->OnRead(ctx->b, ctx->n);
+                free((void *)ctx->b);
               }
               else
               {
@@ -235,16 +244,11 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
               #ifdef WIN32
               setsockopt((SOCKET)ctx->as, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(ctx->ls), sizeof(ctx->ls));
               #endif
-              AcceptConnections(ctx->as);
+              AcceptConnection(ctx->as);
             }
             else
             {
               assert (false);
-            }
-
-            if (ctx->b) 
-            {
-              free((void *)ctx->b);
             }
 
             free(ctx);
@@ -256,27 +260,24 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         }
 
         ProcessMarkRemoveAllListeners();
-      }
-
-      std::cout << "Dispatcher thread returning. Observers : " << iObservers.size() << "\n";
     }
 
-    void AcceptConnections(FD asock)
+    void AcceptConnection(FD asock)
     {
       auto as = std::make_shared<CDeviceSocket>(asock);
 
-        auto observer = std::make_shared<CListener>(
-          nullptr,
-          [this] (const uint8_t *b, size_t n) {
-            OnDispatcherControlRead(b, n);
-          },
-          nullptr,
-          nullptr
-        );
+      auto observer = std::make_shared<CListener>(
+        nullptr,
+        [this] (const uint8_t *b, size_t n) {
+          OnDispatcherControlRead(b, n);
+        },
+        nullptr,
+        nullptr
+      );
 
-        this->AddEventListener(as)->AddEventListener(observer);
+      this->AddEventListener(as)->AddEventListener(observer);
 
-        as->SetName("AS");
+      as->SetName("AS");
     }
 
     void OnDispatcherControlRead(const uint8_t *b, size_t n)
