@@ -68,6 +68,12 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       }
     }
 
+    virtual void OnAccept(SPCSubject subject)
+    {
+      std::lock_guard<std::mutex> lg(iLock);
+      NotifyAccept(subject);
+    }
+
     virtual void OnConnect(void)
     {
       std::lock_guard<std::mutex> lg(iLock);
@@ -141,6 +147,16 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       return false;
     }
 
+    virtual std::string GetName(void)
+    {
+      return iName;
+    }
+
+    virtual void SetName(const std::string& aName)
+    {
+      iName = aName;
+    }
+
     SPCSubject GetDispatcher(void)
     {
        auto target = iTarget;
@@ -165,16 +181,6 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
            return nullptr;
          }
        } 
-    }
-
-    virtual std::string GetName(void)
-    {
-      return iName;
-    }
-
-    virtual void SetName(const std::string& aName)
-    {
-      iName = aName;
     }
     
   protected:
@@ -270,6 +276,15 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       }
       ProcessMarkRemoveAllListeners();
     }
+
+    virtual void NotifyAccept(SPCSubject subject)
+    {
+      for (auto& observer : iObservers)
+      {
+        observer->OnAccept(subject);
+      }
+      ProcessMarkRemoveAllListeners();
+    }    
 };
 
 template <typename T1, typename T2>

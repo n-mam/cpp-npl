@@ -13,6 +13,14 @@ namespace NPL {
 
 using TOnHandshake = std::function<void (void)>;
 
+enum ESocketFlags : uint8_t
+{
+  ESocketInvalid = 0,
+  EClientSocket,
+  EListeningSocket,
+  EAcceptedSocket,
+};
+
 class CDeviceSocket : public CDevice
 {
   public:
@@ -63,6 +71,8 @@ class CDeviceSocket : public CDevice
     virtual void StartSocketClient(void)
     {
       assert(iHost.size() && iPort);
+
+      iSocketFlags |= ESocketFlags::EClientSocket;
 
       #ifdef linux
 
@@ -137,11 +147,12 @@ class CDeviceSocket : public CDevice
       sa.sin_port = htons(iPort);
 
       int fRet = bind((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
+      assert (fRet == 0);
 
-      if (fRet == 0)
-      {
-        fRet = listen((SOCKET)iFD, SOMAXCONN);
-      }
+      fRet = listen((SOCKET)iFD, SOMAXCONN);
+      assert(fRet == 0);
+
+      iSocketFlags |= ESocketFlags::EListeningSocket;
 
       #ifdef WIN32
 
@@ -151,15 +162,13 @@ class CDeviceSocket : public CDevice
 
         ((Context *)b)->type = EIOTYPE::ACCEPT;
 
-        ((Context *)b)->ls = iFD;
-
-        ((Context *)b)->as = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        iAS = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
         DWORD bytesReceived;
 
         bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
           (SOCKET)iFD,
-          (SOCKET)(((Context *)b)->as),
+          (SOCKET)iAS,
           b + sizeof(Context),
           0,
           sizeof(SOCKADDR_STORAGE) + 16,
@@ -186,14 +195,17 @@ class CDeviceSocket : public CDevice
 
     virtual bool IsClientSocket(void)
     {
-      bool fRet = false;
+      return (iSocketFlags & ESocketFlags::EClientSocket);
+    }
 
-      if (iHost.size() && iPort)
-      {
-        fRet = true;
-      }
+    virtual bool IsListeningSocket(void)
+    {
+      return (iSocketFlags & ESocketFlags::EListeningSocket);
+    }
 
-      return fRet;
+    virtual bool IsAcceptedSocket(void)
+    {
+      return (iSocketFlags & ESocketFlags::EAcceptedSocket);
     }
 
     virtual void SetHostAndPort(const std::string& aHostname, int aPort)
@@ -255,6 +267,29 @@ class CDeviceSocket : public CDevice
       {
         SSL_set_accept_state(ssl);
       }
+    }
+
+    virtual void OnAccept(SPCSubject subject)
+    {
+      assert(IsListeningSocket());
+      assert(subject == nullptr);
+
+      #ifdef WIN32
+      setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
+      #endif
+
+      subject = std::make_shared<CDeviceSocket>(iAS);
+
+      {
+        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(subject);
+        sock->iSocketFlags |= ESocketFlags::EAcceptedSocket;
+      }
+
+      subject->SetName("AS");
+
+      this->AddEventListener(subject);
+
+      CDevice::OnAccept(subject);
     }
 
     virtual void OnConnect() override
@@ -330,9 +365,9 @@ class CDeviceSocket : public CDevice
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
       #ifdef linux
-      if (GetName() == "DC-LS")
+      if (IsListeningSocket())
       {
-        return AcceptSocket();
+        return CreateAcceptSocketContext();
       }
       #endif
 
@@ -353,14 +388,13 @@ class CDeviceSocket : public CDevice
     }
 
     #ifdef linux
-    virtual void * AcceptSocket(void)
+    virtual void * CreateAcceptSocketContext(void)
     {
       Context *ctx = (Context *) calloc(1, sizeof(Context));
-      ctx->ls = iFD;
       struct sockaddr asa;
       socklen_t len = sizeof(struct sockaddr);
-      ctx->as = accept(iFD, &asa, &len);
-      SetSocketBlockingEnabled(ctx->as, false);
+      iAS = accept(iFD, &asa, &len);
+      SetSocketBlockingEnabled(iAS, false);
       ctx->type = EIOTYPE::ACCEPT;
       return ctx;
     }
@@ -368,9 +402,13 @@ class CDeviceSocket : public CDevice
     
   private:
 
+    FD iAS;
+
     int iPort = 0;
 
     std::string iHost = "";
+
+    uint32_t iSocketFlags = ESocketFlags::ESocketInvalid;
 
     bool iStopped = false;
 

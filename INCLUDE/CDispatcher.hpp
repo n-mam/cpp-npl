@@ -26,18 +26,33 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       iName = "D";
 
       #ifdef linux
-        iEventPort = epoll_create1(0);
+      iEventPort = epoll_create1(0);
       #else
-        iEventPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+       iEventPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
       #endif
-      /**
-       * Dispatcher control server
-       */
+
       iDControl = std::make_shared<CDeviceSocket>();
 
       iDControl->SetHostAndPort("", 1234);
 
-      this->AddEventListener(iDControl);
+      auto observer = std::make_shared<CListener>(
+        nullptr, nullptr, nullptr, nullptr,
+        [this] (SPCSubject as)
+        {
+          auto aso = std::make_shared<CListener>(
+            nullptr,
+            [this] (const uint8_t *b, size_t n) {
+              assert(n == sizeof(Context));
+              Context *ctx = (Context *) b;
+              ProcessContext((CSubject *) ctx->k, ctx, 0);
+            }
+          );
+
+          as->AddEventListener(aso);
+        }
+      );
+
+      this->AddEventListener(iDControl)->AddEventListener(observer);
 
       if (!iWorker.joinable())
       {
@@ -47,9 +62,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       iDControl->SetName("DC-LS");
 
       iDControl->StartSocketServer();
-      /**
-       * Dispatcher client
-       */
+
       iDClient = std::make_shared<CDeviceSocket>();
 
       iDClient->SetHostAndPort("127.0.0.1", 1234);
@@ -145,18 +158,22 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         unsigned long n;
 
+        uint32_t e = 0;
+
         #ifdef linux
 
-          struct epoll_event e;
+          struct epoll_event ee;
 
-          int fRet = epoll_wait(iEventPort, &e, 1, -1);
+          int fRet = epoll_wait(iEventPort, &ee, 1, -1);
 
           if (fRet < 0 && errno == EINTR)
           {
             continue;
           }
 
-          k = e.data.ptr;
+          k = ee.data.ptr;
+
+          e = ee.events;
 
         #endif
 
@@ -182,13 +199,13 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         #endif
 
-        ProcessContext(k, ctx);
+        ProcessContext(k, ctx, e);
       }
 
       std::cout << "Dispatcher thread returning. Observers : " << iObservers.size() << "\n";
     }
 
-    void ProcessContext(void *k, Context *ctx)
+    void ProcessContext(void *k, Context *ctx, uint32_t e)
     {
         std::unique_lock<std::mutex> ul(iLock);
 
@@ -198,18 +215,18 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           {
             #ifdef linux
 
-            if ((e.events & EPOLLOUT) && !o->IsConnected())
+            if ((e & EPOLLOUT) && !o->IsConnected())
             {
               o->OnConnect();
             }
-            else if (e.events & EPOLLIN)
+            else if (e & EPOLLIN)
             {
               ctx = (NPL::Context *) o->Read();
             }
 
             if (!ctx)
             {
-              std::cout << o->GetName() << " : " << (void *)k << " continuing..\n";
+              std::cout << o->GetName() << " : " << (void *)k << " continuing\n";
               continue;
             }
 
@@ -241,10 +258,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             }
             else if (ctx->type == EIOTYPE::ACCEPT)
             {
-              #ifdef WIN32
-              setsockopt((SOCKET)ctx->as, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(ctx->ls), sizeof(ctx->ls));
-              #endif
-              AcceptConnection(ctx->as);
+              o->OnAccept(nullptr);
             }
             else
             {
@@ -260,33 +274,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         }
 
         ProcessMarkRemoveAllListeners();
-    }
-
-    void AcceptConnection(FD asock)
-    {
-      auto as = std::make_shared<CDeviceSocket>(asock);
-
-      auto observer = std::make_shared<CListener>(
-        nullptr,
-        [this] (const uint8_t *b, size_t n) {
-          OnDispatcherControlRead(b, n);
-        },
-        nullptr,
-        nullptr
-      );
-
-      this->AddEventListener(as)->AddEventListener(observer);
-
-      as->SetName("AS");
-    }
-
-    void OnDispatcherControlRead(const uint8_t *b, size_t n)
-    {
-      assert(n == sizeof(Context));
-
-      Context *ctx = (Context *)b;
-
-      ProcessContext((CSubject *)ctx->k, ctx);
     }
 
     virtual void QueuePendingContext(SPCSubject s, void *c) override

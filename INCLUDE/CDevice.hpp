@@ -31,8 +31,6 @@ struct Context
     OVERLAPPED      ol;
   #endif
     EIOTYPE         type;
-    FD              ls;
-    FD              as;
     void          * k;
     const uint8_t * b;
     unsigned long   n;

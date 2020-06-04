@@ -9,32 +9,27 @@ using TListenerOnConnect = std::function<void (void)>;
 using TListenerOnRead = std::function<void (const uint8_t *b, size_t n)>;
 using TListenerOnWrite = std::function<void (const uint8_t *b, size_t n)>;
 using TListenerOnDisconnect = std::function<void (void)>;
+using TListenerOnAccept = std::function<void (SPCSubject<uint8_t, uint8_t>)>;
 
 class CListener : public CSubject<uint8_t, uint8_t>
 {
   public:
 
     CListener(
-      TListenerOnConnect cbkConnect = nullptr,      
+      TListenerOnConnect cbkConnect = nullptr,
       TListenerOnRead cbkRead = nullptr,
       TListenerOnWrite cbkWrite = nullptr,
-      TListenerOnDisconnect cbkDisconnect = nullptr)
+      TListenerOnDisconnect cbkDisconnect = nullptr,
+      TListenerOnAccept cbkAccept = nullptr)
     {
       iCbkConnect = cbkConnect;
       iCbkRead = cbkRead;
       iCbkWrite = cbkWrite;
       iCbkDisconnect = cbkDisconnect;
+      iCbkAccept = cbkAccept;
     }
 
     ~CListener(){}
-
-    virtual void OnConnect(void)
-    {
-      if (iCbkConnect)
-      {
-        iCbkConnect();
-      }
-    }
 
     virtual void OnRead(const uint8_t *b, size_t n)
     {
@@ -52,6 +47,22 @@ class CListener : public CSubject<uint8_t, uint8_t>
       }
     }
 
+    virtual void OnConnect(void)
+    {
+      if (iCbkConnect)
+      {
+        iCbkConnect();
+      }
+    }
+
+    virtual void OnAccept(SPCSubject subject)
+    {
+      if (iCbkAccept)
+      {
+        iCbkAccept(subject);
+      }
+    }
+
     virtual void OnDisconnect(void)
     {
       if (iCbkDisconnect)
@@ -62,9 +73,10 @@ class CListener : public CSubject<uint8_t, uint8_t>
 
   protected:
 
-    TListenerOnConnect iCbkConnect;
     TListenerOnRead iCbkRead;
     TListenerOnWrite iCbkWrite;
+    TListenerOnAccept iCbkAccept;
+    TListenerOnConnect iCbkConnect;
     TListenerOnDisconnect iCbkDisconnect;
 
 };
