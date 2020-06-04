@@ -287,7 +287,9 @@ class CDeviceSocket : public CDevice
 
       subject->SetName("AS");
 
-      this->AddEventListener(subject);
+      auto D = GetDispatcher();
+
+      D->AddEventListener(subject);
 
       CDevice::OnAccept(subject);
     }
