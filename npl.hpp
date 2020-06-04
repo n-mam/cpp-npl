@@ -4,8 +4,17 @@
 
 namespace NPL 
 {
-  auto D = std::make_shared<CDispatcher>();
+  auto make_dispatcher(void)
+  {
+    auto D = std::make_shared<CDispatcher>();
 
+    D->InitializeControl();
+
+    return D;
+  }
+
+  auto D = make_dispatcher();
+  
   auto make_ftp(const std::string& host, int port, FTPS ftps = FTPS::None)
   {
     auto cc = std::make_shared<CDeviceSocket>();
@@ -19,7 +28,7 @@ namespace NPL
 
     ftp->SetName("ftp");
 
-    D->AddEventListener(cc)->AddEventListener(ftp);
+    NPL::D->AddEventListener(cc)->AddEventListener(ftp);
 
     return ftp;
   }

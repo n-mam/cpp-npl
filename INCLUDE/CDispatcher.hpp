@@ -31,47 +31,10 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
        iEventPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
       #endif
 
-      iDControl = std::make_shared<CDeviceSocket>();
-
-      iDControl->SetHostAndPort("", 1234);
-
-      auto observer = std::make_shared<CListener>(
-        nullptr, nullptr, nullptr, nullptr,
-        [this] (SPCSubject as)
-        {
-          auto aso = std::make_shared<CListener>(
-            nullptr,
-            [this] (const uint8_t *b, size_t n) {
-              assert(n == sizeof(Context));
-              Context *ctx = (Context *) b;
-              ProcessContext((CSubject *) ctx->k, ctx, 0);
-            }
-          );
-
-          as->AddEventListener(aso);
-        }
-      );
-
-      this->AddEventListener(iDControl)->AddEventListener(observer);
-
       if (!iWorker.joinable())
       {
         iWorker = std::thread(&CDispatcher::Worker, this);
       }
-
-      iDControl->SetName("DC-LS");
-
-      iDControl->StartSocketServer();
-
-      iDClient = std::make_shared<CDeviceSocket>();
-
-      iDClient->SetHostAndPort("127.0.0.1", 1234);
-
-      this->AddEventListener(iDClient);
-
-      iDClient->SetName("DC-CT");
-
-      iDClient->StartSocketClient();      
     }
 
     ~CDispatcher()
@@ -96,6 +59,48 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
           CloseHandle(iEventPort);
         }
       #endif
+    }
+
+    void InitializeControl(void)
+    {
+      iTarget = weak_from_this();
+
+      iDControl = std::make_shared<CDeviceSocket>();
+
+      iDControl->SetHostAndPort("", 1234);
+
+      auto observer = std::make_shared<CListener>(
+        nullptr, nullptr, nullptr, nullptr,
+        [this] (SPCSubject as)
+        {
+          auto aso = std::make_shared<CListener>(
+            nullptr,
+            [this] (const uint8_t *b, size_t n) {
+              assert(n == sizeof(Context));
+              Context *ctx = (Context *) b;
+              ProcessContext((CSubject *) ctx->k, ctx, 0);
+            }
+          );
+
+          as->AddEventListener(aso);
+        }
+      );
+
+      GetDispatcher()->AddEventListener(iDControl)->AddEventListener(observer);
+
+      iDControl->SetName("DC-LS");
+
+      iDControl->StartSocketServer();
+
+      iDClient = std::make_shared<CDeviceSocket>();
+
+      iDClient->SetHostAndPort("127.0.0.1", 1234);
+
+      GetDispatcher()->AddEventListener(iDClient);
+
+      iDClient->SetName("DC-CT");
+
+      iDClient->StartSocketClient();      
     }
 
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)
