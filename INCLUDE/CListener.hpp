@@ -9,7 +9,7 @@ using TListenerOnConnect = std::function<void (void)>;
 using TListenerOnRead = std::function<void (const uint8_t *b, size_t n)>;
 using TListenerOnWrite = std::function<void (const uint8_t *b, size_t n)>;
 using TListenerOnDisconnect = std::function<void (void)>;
-using TListenerOnAccept = std::function<void (SPCSubject<uint8_t, uint8_t>)>;
+using TListenerOnAccept = std::function<void (void)>;
 
 class CListener : public CSubject<uint8_t, uint8_t>
 {
@@ -55,11 +55,11 @@ class CListener : public CSubject<uint8_t, uint8_t>
       }
     }
 
-    virtual void OnAccept(SPCSubject subject)
+    virtual void OnAccept()
     {
       if (iCbkAccept)
       {
-        iCbkAccept(subject);
+        iCbkAccept();
       }
     }
 

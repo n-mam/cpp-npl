@@ -23,17 +23,21 @@ enum ESocketFlags : uint8_t
 
 class CDeviceSocket : public CDevice
 {
+  using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
+  using WPCDeviceSocket = std::weak_ptr<CDeviceSocket>;
+
   public:
 
     CDeviceSocket()
     {
-      iDevicetype = EDeviceType::EDevSock;
       iFD = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+      iDevicetype = EDeviceType::EDevSock;      
     }
 
     CDeviceSocket(FD aSocket)
     {
       iFD = aSocket;
+      iDevicetype = EDeviceType::EDevSock;
     }
 
     ~CDeviceSocket()
@@ -62,7 +66,7 @@ class CDeviceSocket : public CDevice
         }
 
         shutdown((SOCKET)iFD, 1); //sd_send
-        
+
         iStopped = true;
 
         std::cout << iName << " StopSocket() : shutdown socket sd_send.\n";
@@ -270,29 +274,27 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    virtual void OnAccept(SPCSubject subject)
+    virtual void OnAccept(void)
     {
       assert(IsListeningSocket());
-      assert(subject == nullptr);
 
       #ifdef WIN32
       setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
       #endif
 
-      subject = std::make_shared<CDeviceSocket>(iAS);
+      iConnectedClient.reset();
 
-      {
-        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(subject);
-        sock->iSocketFlags |= ESocketFlags::EAcceptedSocket;
-      }
+      iConnectedClient = std::make_shared<CDeviceSocket>(iAS);
 
-      subject->SetName("AS");
+      iConnectedClient->iSocketFlags |= ESocketFlags::EAcceptedSocket;
+
+      iConnectedClient->SetName("AS");
 
       auto D = GetDispatcher();
 
-      D->AddEventListener(subject);
+      D->AddEventListener(iConnectedClient);
 
-      CDevice::OnAccept(subject);
+      CDevice::OnAccept();
     }
 
     virtual void OnConnect() override
@@ -390,22 +392,28 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    #ifdef linux
     virtual void * CreateAcceptSocketContext(void)
     {
-      Context *ctx = (Context *) calloc(1, sizeof(Context));
-      struct sockaddr asa;
-      socklen_t len = sizeof(struct sockaddr);
-      iAS = accept(iFD, &asa, &len);
+      iAS = accept(iFD, NULL, NULL);
+
+      if (iAS == -1)
+      {
+        std::cout << "accept failed. Error : " << strerror(errno) << "\n";
+        return nullptr;
+      }
+
       SetSocketBlockingEnabled(iAS, false);
+
+      Context *ctx = (Context *) calloc(1, sizeof(Context));
+      
       ctx->type = EIOTYPE::ACCEPT;
+      
       return ctx;
     }
-    #endif
     
-  private:
-
-    FD iAS;
+    SPCDeviceSocket iConnectedClient = nullptr;
+    
+  protected:
 
     int iPort = 0;
 
@@ -429,6 +437,8 @@ class CDeviceSocket : public CDevice
 
     TOnHandshake iOnHandShake = nullptr;
 
+    FD iAS;
+
     #ifdef WIN32
     void * GetExtentionPfn(GUID guid, FD fd)
     {
@@ -450,6 +460,7 @@ class CDeviceSocket : public CDevice
 };
 
 using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
+using WPCDeviceSocket = std::weak_ptr<CDeviceSocket>;
 
 } //namespace NPL
 

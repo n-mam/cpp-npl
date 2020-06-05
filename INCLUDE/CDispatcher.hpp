@@ -65,13 +65,13 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
     {
       iTarget = weak_from_this();
 
-      iDControl = std::make_shared<CDeviceSocket>();
+      iDServer = std::make_shared<CDeviceSocket>();
 
-      iDControl->SetHostAndPort("", 1234);
+      iDServer->SetHostAndPort("", 1234);
 
       auto observer = std::make_shared<CListener>(
         nullptr, nullptr, nullptr, nullptr,
-        [this] (SPCSubject as)
+        [this] ()
         {
           auto aso = std::make_shared<CListener>(
             nullptr,
@@ -82,15 +82,15 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             }
           );
 
-          as->AddEventListener(aso);
+          this->iDServer->iConnectedClient->AddEventListener(aso);
         }
       );
 
-      GetDispatcher()->AddEventListener(iDControl)->AddEventListener(observer);
+      GetDispatcher()->AddEventListener(iDServer)->AddEventListener(observer);
 
-      iDControl->SetName("DC-LS");
+      iDServer->SetName("DC-LS");
 
-      iDControl->StartSocketServer();
+      iDServer->StartSocketServer();
 
       iDClient = std::make_shared<CDeviceSocket>();
 
@@ -156,7 +156,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
     std::thread iWorker;
 
-    SPCDeviceSocket iDControl;
+    SPCDeviceSocket iDServer;
 
     SPCDeviceSocket iDClient;
 
@@ -269,7 +269,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             }
             else if (ctx->type == EIOTYPE::ACCEPT)
             {
-              o->OnAccept(nullptr);
+              o->OnAccept();
             }
             else
             {

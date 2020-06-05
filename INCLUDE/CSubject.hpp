@@ -68,10 +68,10 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       }
     }
 
-    virtual void OnAccept(SPCSubject subject)
+    virtual void OnAccept(void)
     {
       std::lock_guard<std::mutex> lg(iLock);
-      NotifyAccept(subject);
+      NotifyAccept();
     }
 
     virtual void OnConnect(void)
@@ -277,11 +277,11 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       ProcessMarkRemoveAllListeners();
     }
 
-    virtual void NotifyAccept(SPCSubject subject)
+    virtual void NotifyAccept(void)
     {
       for (auto& observer : iObservers)
       {
-        observer->OnAccept(subject);
+        observer->OnAccept();
       }
       ProcessMarkRemoveAllListeners();
     }    
