@@ -121,6 +121,11 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
         int rc = epoll_ctl(iEventPort, EPOLL_CTL_ADD, device->iFD, &e);
 
+        if (rc == -1)
+        {
+          std::cout << "epoll_ctl failed, error " << strerror(errno) << "\n";
+        }
+
         assert(rc == 0);
 
       #endif
@@ -218,6 +223,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         {
           if (k == (void *)o.get())
           {
+            ul.unlock();
+
             #ifdef linux
 
             if ((e & EPOLLOUT) && !o->IsConnected())
@@ -238,8 +245,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             #endif
 
             std::cout << NPL::EIOToChar(ctx->type) << " " << o->GetName() << " : " << (void *)k << ", n " << ctx->n << "\n";            
-
-            ul.unlock();
 
             if (ctx->type == EIOTYPE::READ)
             {
