@@ -111,8 +111,10 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
-        assert(iEventPort != -1);
+      assert(iEventPort != -1);
 
+      if (device->GetDeviceType() == EDeviceType::EDevSock)
+      {
         struct epoll_event e;
 
         e.events = EPOLLIN | EPOLLOUT;
@@ -127,21 +129,21 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         }
 
         assert(rc == 0);
+      }
 
       #endif
 
       #ifdef WIN32
 
-        assert(iEventPort != INVALID_HANDLE_VALUE);
+      assert(iEventPort != INVALID_HANDLE_VALUE);
 
-        HANDLE port =
-          CreateIoCompletionPort(
-            device->iFD,
-            iEventPort,
-            (ULONG_PTR) device.get(),
-            0);
+      HANDLE port = CreateIoCompletionPort(
+        device->iFD,
+        iEventPort,
+        (ULONG_PTR) device.get(),
+        0);
 
-        assert(port);
+      assert(port);
 
       #endif
 

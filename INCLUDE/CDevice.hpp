@@ -14,13 +14,19 @@
 
 namespace NPL {
 
+enum EDeviceType : uint8_t
+{
+  EDevFile = 0,
+  EDevSock
+};
+
 enum EIOTYPE : uint8_t
 {
-  ACCEPT = 0,
-  CONNECT,
+  CONNECT = 0,
+  ACCEPT,
   READ,
   WRITE,
-  IOCTL,
+  IOCTL
 };
 
 struct Context
@@ -71,7 +77,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       #endif
 
       #ifdef WIN32
-      
+
       iFD = CreateFileA(
         aFilename.c_str(),
         GENERIC_READ|GENERIC_WRITE,
@@ -91,9 +97,16 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       }
 
       #endif
+
+      iDevicetype = EDeviceType::EDevSock;
     }
 
     virtual ~CDevice() {};
+
+    virtual EDeviceType GetDeviceType(void)
+    {
+      return iDevicetype;
+    }
 
     virtual void * Read(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
@@ -177,6 +190,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
   protected:
 
+    EDeviceType iDevicetype = EDeviceType::EDevSock;
 };
 
 const char EIOToChar(EIOTYPE t)
