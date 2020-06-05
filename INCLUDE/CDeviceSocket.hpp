@@ -392,9 +392,10 @@ class CDeviceSocket : public CDevice
       }
     }
 
+    #ifdef linux
     virtual void * CreateAcceptSocketContext(void)
     {
-      iAS = accept(iFD, NULL, NULL);
+      iAS = (FD) accept((SOCKET)iFD, NULL, NULL);
 
       if (iAS == -1)
       {
@@ -405,12 +406,13 @@ class CDeviceSocket : public CDevice
       SetSocketBlockingEnabled(iAS, false);
 
       Context *ctx = (Context *) calloc(1, sizeof(Context));
-      
+
       ctx->type = EIOTYPE::ACCEPT;
-      
+
       return ctx;
     }
-    
+    #endif
+
     SPCDeviceSocket iConnectedClient = nullptr;
     
   protected:
