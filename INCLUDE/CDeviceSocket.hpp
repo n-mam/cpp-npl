@@ -27,6 +27,7 @@ class CDeviceSocket : public CDevice
 
     CDeviceSocket()
     {
+      iDevicetype = EDeviceType::EDevSock;
       iFD = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     }
 

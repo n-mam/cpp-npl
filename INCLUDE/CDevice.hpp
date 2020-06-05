@@ -16,7 +16,8 @@ namespace NPL {
 
 enum EDeviceType : uint8_t
 {
-  EDevFile = 0,
+  EDevNone = 0,
+  EDevFile,
   EDevSock
 };
 
@@ -98,7 +99,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #endif
 
-      iDevicetype = EDeviceType::EDevSock;
+      iDevicetype = EDeviceType::EDevFile;
     }
 
     virtual ~CDevice() {};
@@ -190,7 +191,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
   protected:
 
-    EDeviceType iDevicetype = EDeviceType::EDevSock;
+    EDeviceType iDevicetype = EDeviceType::EDevNone;
 };
 
 const char EIOToChar(EIOTYPE t)
