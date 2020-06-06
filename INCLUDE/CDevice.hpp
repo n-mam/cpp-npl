@@ -136,7 +136,23 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       ctx->n = read(iFD, (void *) ctx->b, l);
 
-      return (void *) ctx;
+      if ((int)ctx->n == -1)
+      {
+        std::cout << "CDevice::Read read() failed, error : " << strerror(errno) << "\n";
+
+        if (!b)
+        {
+          free ((void *)ctx->b);
+        }
+
+        free (ctx);
+
+        return nullptr;
+      }
+      else
+      {
+        return (void *) ctx;
+      }
 
       #else
 
@@ -173,7 +189,13 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef linux
 
-      write(iFD, b, l);
+      int rc = write(iFD, b, l);
+
+      if (rc == -1)
+      {
+        std::cout << "CDevice::Write() failed, error : " << strerror(errno) << "\n";
+        assert(false);
+      }
 
       #else
 
