@@ -221,7 +221,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
     {
         std::unique_lock<std::mutex> ul(iLock);
 
-        for (auto& o : iObservers)
+        for (auto o : iObservers)
         {
           if (k == (void *)o.get())
           {
@@ -229,18 +229,20 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             #ifdef linux
 
+            assert(ctx == nullptr);
+
             if ((e & EPOLLOUT) && !o->IsConnected())
             {
               o->OnConnect();
             }
             else if (e & EPOLLIN)
             {
-              ctx = (NPL::Context *) o->Read();
+              ctx = (Context *) o->Read();
             }
 
             if (!ctx)
             {
-              continue;
+              break;
             }
 
             #endif

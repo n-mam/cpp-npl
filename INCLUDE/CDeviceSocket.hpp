@@ -152,34 +152,47 @@ class CDeviceSocket : public CDevice
       sa.sin_port = htons(iPort);
 
       int fRet = bind((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
+
+      if (fRet == -1)
+      {
+        std::cout << "bind failed, Error : "  << strerror(errno) << "\n";
+      }
+
       assert (fRet == 0);
 
       fRet = listen((SOCKET)iFD, SOMAXCONN);
+
+      if (fRet == -1)
+      {
+        std::cout << "listen failed, Error : " << strerror(errno) << "\n";
+      }
+
       assert(fRet == 0);
 
       iSocketFlags |= ESocketFlags::EListeningSocket;
 
       #ifdef WIN32
 
-        auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
+      auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
 
-        uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(Context));
+      uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(Context));
 
-        ((Context *)b)->type = EIOTYPE::ACCEPT;
+      ((Context *)b)->type = EIOTYPE::ACCEPT;
 
-        iAS = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+      iAS = (FD) socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-        DWORD bytesReceived;
+      DWORD bytesReceived;
 
-        bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
-          (SOCKET)iFD,
-          (SOCKET)iAS,
-          b + sizeof(Context),
-          0,
-          sizeof(SOCKADDR_STORAGE) + 16,
-          sizeof(SOCKADDR_STORAGE) + 16,
-          &bytesReceived,
-          (LPOVERLAPPED)b);
+      bool rc = ((LPFN_ACCEPTEX)AcceptEx)(
+        (SOCKET)iFD,
+        (SOCKET)iAS,
+        b + sizeof(Context),
+        0,
+        sizeof(SOCKADDR_STORAGE) + 16,
+        sizeof(SOCKADDR_STORAGE) + 16,
+        &bytesReceived,
+        (LPOVERLAPPED)b);
+      
       #endif
     }
 
@@ -372,7 +385,24 @@ class CDeviceSocket : public CDevice
       #ifdef linux
       if (IsListeningSocket())
       {
-        return CreateAcceptSocketContext();
+        struct sockaddr_storage ca;
+        socklen_t alen = sizeof(struct sockaddr_storage);
+
+        iAS = (FD) accept((SOCKET)iFD, (struct sockaddr *) &ca, &alen);
+
+        if (iAS == -1)
+        {
+          std::cout << "accept failed, error : " << strerror(errno) << "\n";
+          return nullptr;
+        }
+
+        SetSocketBlockingEnabled(iAS, false);
+
+        Context *ctx = (Context *) calloc(1, sizeof(Context));
+
+        ctx->type = EIOTYPE::ACCEPT;
+
+        return ctx;
       }
       #endif
 
@@ -395,11 +425,14 @@ class CDeviceSocket : public CDevice
     #ifdef linux
     virtual void * CreateAcceptSocketContext(void)
     {
-      iAS = (FD) accept((SOCKET)iFD, NULL, NULL);
+      //struct sockaddr_storage ca;
+      //socklen_t alen = sizeof(struct sockaddr_storage);
+
+      iAS = (FD) accept((SOCKET)iFD, NULL, NULL); //(struct sockaddr *) &ca, &alen);
 
       if (iAS == -1)
       {
-        std::cout << "accept failed. Error : " << strerror(errno) << "\n";
+        std::cout << "accept failed, error : " << strerror(errno) << "\n";
         return nullptr;
       }
 
