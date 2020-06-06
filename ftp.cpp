@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     else
       std::cout << "Download complete.\n";
     return true;
-  }, "bootstrap-vcpkg.batt", "../download.bat", protection);
+  }, "bootstrap-vcpkg.bat", "./download.bat", protection);
 
   /**
    * File upload. The lambda argument is an output callback which is invoked
