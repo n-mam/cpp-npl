@@ -425,6 +425,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       if (IsPositivePreliminaryReply(code))
       {
+        InitializeFileDevice();
+
         if (iDCProt == DCProt::Protected)
         {
           std::dynamic_pointer_cast<CDeviceSocket>
@@ -464,9 +466,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       }
     }
 
-    virtual void OnDataChannelConnect(void)
+    virtual void InitializeFileDevice(void)
     {
-      auto& [cmd, fRemote, fLocal, rcbk, tcbk] = iCmdQ.front();
+      auto& [cmd, fRemote, fLocal, rcbk, tcbk] = iCmdQ.front();      
 
       if (fLocal.size())
       {
@@ -503,6 +505,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       }
 
       iContinueTransfer = true;
+    }
+
+    virtual void OnDataChannelConnect(void)
+    {
+      auto& [cmd, fRemote, fLocal, rcbk, tcbk] = iCmdQ.front();
     }
 
     virtual void OnDataChannelRead(const uint8_t *b, size_t n)

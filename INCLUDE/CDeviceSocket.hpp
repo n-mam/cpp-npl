@@ -155,7 +155,7 @@ class CDeviceSocket : public CDevice
 
       if (fRet == -1)
       {
-        std::cout << "bind failed, Error : "  << strerror(errno) << "\n";
+        std::cout << "bind failed \n";
       }
 
       assert (fRet == 0);
@@ -164,7 +164,7 @@ class CDeviceSocket : public CDevice
 
       if (fRet == -1)
       {
-        std::cout << "listen failed, Error : " << strerror(errno) << "\n";
+        std::cout << "listen failed \n";
       }
 
       assert(fRet == 0);
