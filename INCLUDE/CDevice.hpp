@@ -34,7 +34,8 @@ struct Context
 {
   #ifdef linux
 
-  #else
+  #endif
+  #ifdef WIN32
     OVERLAPPED      ol;
   #endif
     EIOTYPE         type;

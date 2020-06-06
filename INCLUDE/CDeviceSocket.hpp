@@ -13,7 +13,7 @@ namespace NPL {
 
 using TOnHandshake = std::function<void (void)>;
 
-enum ESocketFlags : uint8_t
+enum ESocketType : uint8_t
 {
   ESocketInvalid = 0,
   EClientSocket,
@@ -77,7 +77,7 @@ class CDeviceSocket : public CDevice
     {
       assert(iHost.size() && iPort);
 
-      iSocketFlags |= ESocketFlags::EClientSocket;
+      iSocketType = ESocketType::EClientSocket;
 
       #ifdef linux
 
@@ -169,7 +169,11 @@ class CDeviceSocket : public CDevice
 
       assert(fRet == 0);
 
-      iSocketFlags |= ESocketFlags::EListeningSocket;
+      #ifdef linux
+      SetSocketBlockingEnabled(iFD, false);
+      #endif
+
+      iSocketType = ESocketType::EListeningSocket;
 
       #ifdef WIN32
 
@@ -213,17 +217,17 @@ class CDeviceSocket : public CDevice
 
     virtual bool IsClientSocket(void)
     {
-      return (iSocketFlags & ESocketFlags::EClientSocket);
+      return (iSocketType == ESocketType::EClientSocket);
     }
 
     virtual bool IsListeningSocket(void)
     {
-      return (iSocketFlags & ESocketFlags::EListeningSocket);
+      return (iSocketType == ESocketType::EListeningSocket);
     }
 
     virtual bool IsAcceptedSocket(void)
     {
-      return (iSocketFlags & ESocketFlags::EAcceptedSocket);
+      return (iSocketType == ESocketType::EAcceptedSocket);
     }
 
     virtual void SetHostAndPort(const std::string& aHostname, int aPort)
@@ -299,7 +303,7 @@ class CDeviceSocket : public CDevice
 
       iConnectedClient = std::make_shared<CDeviceSocket>(iAS);
 
-      iConnectedClient->iSocketFlags |= ESocketFlags::EAcceptedSocket;
+      iConnectedClient->iSocketType = ESocketType::EAcceptedSocket;
 
       iConnectedClient->SetName("AS");
 
@@ -392,7 +396,7 @@ class CDeviceSocket : public CDevice
 
         if (iAS == -1)
         {
-          std::cout << "accept failed, error : " << strerror(errno) << "\n";
+          std::cout << "accept failed, error : " << strerror(errno) << " " << iSocketType << "\n";
           return nullptr;
         }
 
@@ -422,30 +426,6 @@ class CDeviceSocket : public CDevice
       }
     }
 
-    #ifdef linux
-    virtual void * CreateAcceptSocketContext(void)
-    {
-      //struct sockaddr_storage ca;
-      //socklen_t alen = sizeof(struct sockaddr_storage);
-
-      iAS = (FD) accept((SOCKET)iFD, NULL, NULL); //(struct sockaddr *) &ca, &alen);
-
-      if (iAS == -1)
-      {
-        std::cout << "accept failed, error : " << strerror(errno) << "\n";
-        return nullptr;
-      }
-
-      SetSocketBlockingEnabled(iAS, false);
-
-      Context *ctx = (Context *) calloc(1, sizeof(Context));
-
-      ctx->type = EIOTYPE::ACCEPT;
-
-      return ctx;
-    }
-    #endif
-
     SPCDeviceSocket iConnectedClient = nullptr;
     
   protected:
@@ -454,7 +434,7 @@ class CDeviceSocket : public CDevice
 
     std::string iHost = "";
 
-    uint32_t iSocketFlags = ESocketFlags::ESocketInvalid;
+    uint32_t iSocketType = ESocketType::ESocketInvalid;
 
     bool iStopped = false;
 

@@ -75,10 +75,16 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         {
           auto aso = std::make_shared<CListener>(
             nullptr,
-            [this] (const uint8_t *b, size_t n) {
-              assert(n == sizeof(Context));
-              Context *ctx = (Context *) b;
-              ProcessContext((CSubject *) ctx->k, ctx, 0);
+            [this, m = std::string("")] 
+            (const uint8_t *b, size_t n) mutable {
+              m.append((char *)b, n);
+              if (m.size() == sizeof(Context))
+              {
+                Context *ctx = (Context *) calloc(1, sizeof(Context));
+                memmove(ctx, m.data(), sizeof(Context));
+                ProcessContext((CSubject *) ctx->k, ctx, 0);
+                m.clear();                
+              }
             }
           );
 
@@ -229,8 +235,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             #ifdef linux
 
-            assert(ctx == nullptr);
-
             if ((e & EPOLLOUT) && !o->IsConnected())
             {
               o->OnConnect();
@@ -294,6 +298,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       ((Context *)c)->k = s.get();
 
       iDClient->Write((const uint8_t *)c, sizeof(Context));
+
+      free (c);
     }
 
     virtual bool IsDispatcher(void) override
