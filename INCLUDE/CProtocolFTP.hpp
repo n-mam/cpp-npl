@@ -133,6 +133,19 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       ProcessNextCmd();       
     }
 
+    virtual void Stop(void) override
+    {
+      std::lock_guard<std::mutex> lg(iLock);
+      
+      if (iDataChannel)
+      {
+        std::dynamic_pointer_cast<CDeviceSocket>(iDataChannel)->StopSocket();
+        iDataChannel.reset();
+      }
+
+      CProtocol::Stop();
+    }
+
     virtual void SetFTPS(FTPS ftps)
     {
       iFTPS = ftps;

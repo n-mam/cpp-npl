@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
    * Start the protocol. This would asynchronously
    * trigger connect and the login sequence
    */
-  ftp->StartProtocol();
+  ftp->Start();
 
   DCProt protection = DCProt::Protected;
 

@@ -16,7 +16,7 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual ~CProtocol() {}
 
-    virtual void StartProtocol(bool client = true)
+    virtual void Start(bool client = true)
     {
       auto sub = (this->iTarget).lock();
 
@@ -38,6 +38,16 @@ class CProtocol : public CSubject<T1, T2>
       }
     }
 
+    virtual void Stop(void)
+    {
+      auto cc = iTarget.lock();
+
+      if (cc)
+      {
+        std::dynamic_pointer_cast<CDeviceSocket>(cc)->StopSocket();
+      }      
+    }
+
     virtual size_t GetMessageCount(void)
     {
       return iMessages.size();
@@ -52,11 +62,6 @@ class CProtocol : public CSubject<T1, T2>
     {
       iUserName = user;
       iPassword = pass;
-    }
-
-    virtual void Stop(void)
-    {
-
     }
 
     virtual void OnConnect(void) override
