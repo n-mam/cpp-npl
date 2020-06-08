@@ -42,11 +42,15 @@ class CDeviceSocket : public CDevice
 
     ~CDeviceSocket()
     {
+      std::cout << "~" << iName << " ->\n";
       StopSocket();
       shutdown((SOCKET)iFD, 0); //sd_recv
       closesocket((SOCKET)iFD);
-      if (ssl) SSL_free(ssl);
-      std::cout << "~" << iName << " : shutdown socket sd_recv.\n";
+      if (ssl) 
+      {
+        SSL_free(ssl);
+      }
+      std::cout << "~" << iName << " shutdown(sd_recv)\n";
     }
 
     virtual void StopSocket(void)
@@ -60,16 +64,16 @@ class CDeviceSocket : public CDevice
           if (!(flag & SSL_SENT_SHUTDOWN))
           {
             int rc = SSL_shutdown(ssl);
-            std::cout << iName << " StopSocket() : ssl_shutdown rc : " << rc << "\n";          
+            std::cout << iName << " StopSocket : ssl_shutdown() rc : " << rc << "\n";          
             UpdateWBIO();
           }
         }
 
-        shutdown((SOCKET)iFD, 1); //sd_send
-
         iStopped = true;
 
-        std::cout << iName << " StopSocket() : shutdown socket sd_send.\n";
+        shutdown((SOCKET)iFD, 1); //sd_send
+
+        std::cout << iName << " StopSocket : shutdown(sd_send)\n";
       }
     }
 
@@ -321,6 +325,16 @@ class CDeviceSocket : public CDevice
       CDevice::Read();
       setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );
       #endif
+    }
+
+    virtual void OnDisconnect() override
+    {
+      if (ssl)
+      {
+        assert(SSL_get_shutdown(ssl) & SSL_SENT_SHUTDOWN);
+      }
+
+      CDevice::OnDisconnect();
     }
 
     virtual void OnRead(const uint8_t *b, size_t n) override
