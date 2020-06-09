@@ -44,7 +44,7 @@ struct Context
     unsigned long   n;
 };
 
-constexpr uint32_t DEVICE_BUFFER_SIZE = 16;
+constexpr uint32_t DEVICE_BUFFER_SIZE = 256;
 
 class CDevice : public CSubject<uint8_t, uint8_t>
 {
@@ -175,7 +175,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << (void *)this << " " << GetName() << " CDevice::Wrtite() not connected\n";
+        std::cout << (void *)this << " " << GetName() << " CDevice::Write() not connected\n";
         return;
       }
 

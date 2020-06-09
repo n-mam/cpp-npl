@@ -261,13 +261,17 @@ class CDeviceSocket : public CDevice
 
       int pending = BIO_pending(wbio);
 
-      uint8_t buf[2048];
+      constexpr int BioRBufSize = 32;
 
-      if (pending)
+      uint8_t buf[BioRBufSize];
+
+      while (pending)
       {
-        int rc = BIO_read(wbio, buf, pending);
+        int rc = BIO_read(wbio, buf, BioRBufSize);
 
-        CDevice::Write(buf, pending);
+        CDevice::Write(buf, rc);
+
+        pending = BIO_pending(wbio);
       }
     }
 
@@ -343,6 +347,10 @@ class CDeviceSocket : public CDevice
       CDevice::Read();
       #endif
 
+      size_t _n = n;
+      std::string msg;
+      const uint8_t *_b = b;
+
       if (ssl)
       {
         int rc = BIO_write(rbio, b, n);
@@ -357,6 +365,8 @@ class CDeviceSocket : public CDevice
           {
             iHandshakeDone = true;
 
+            std::cout << iName << " handshake done\n";
+
             if (iOnHandShake)
             {
               iOnHandShake();
@@ -366,22 +376,39 @@ class CDeviceSocket : public CDevice
 
         if (iHandshakeDone)
         {
-          rc = SSL_read(ssl, iRBuf, 1024);
+          while (true)
+          {
+            char buf[DEVICE_BUFFER_SIZE];
+
+            rc = SSL_read(ssl, buf, DEVICE_BUFFER_SIZE);
+           
+            std::cout << iName << " ssl_read() " << rc << "\n";
+
+            if (rc > 0) 
+            {
+              msg.append(buf, rc);
+            }
+            else
+            {
+              break;
+            }
+          }
+        
         }
 
         UpdateWBIO();
 
-        if (rc <= 0)
+        if (msg.size())
         {
-          return;
+          _b = (uint8_t *)msg.data(), _n = msg.size();
         }
         else
         {
-          b = iRBuf, n = rc;
+          return;
         }
       }
 
-      CDevice::OnRead(b, n);
+      CDevice::OnRead(_b, _n);
     }
 
     virtual void OnWrite(const uint8_t *b, size_t n) override
@@ -459,8 +486,6 @@ class CDeviceSocket : public CDevice
     BIO *rbio = nullptr;
 
     BIO *wbio = nullptr;
-
-    uint8_t iRBuf[1024];
 
     bool iHandshakeDone = false;
 
