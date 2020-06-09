@@ -40,7 +40,7 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void Stop(void)
     {
-      auto cc = iTarget.lock();
+      auto cc = (this->iTarget).lock();
 
       if (cc)
       {
