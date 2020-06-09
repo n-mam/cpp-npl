@@ -258,7 +258,6 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
               if (ctx->n != 0)
               {
                 o->OnRead(ctx->b, ctx->n);
-                free((void *)ctx->b);
               }
               else
               {
@@ -281,6 +280,8 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
             {
               assert (false);
             }
+
+            free((void *)ctx->b);
 
             free(ctx);
 

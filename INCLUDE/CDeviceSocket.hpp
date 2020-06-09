@@ -381,8 +381,6 @@ class CDeviceSocket : public CDevice
             char buf[DEVICE_BUFFER_SIZE];
 
             rc = SSL_read(ssl, buf, DEVICE_BUFFER_SIZE);
-           
-            std::cout << iName << " ssl_read() " << rc << "\n";
 
             if (rc > 0) 
             {
@@ -393,7 +391,6 @@ class CDeviceSocket : public CDevice
               break;
             }
           }
-        
         }
 
         UpdateWBIO();

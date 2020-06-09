@@ -181,12 +181,6 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       assert(b && l);
 
-      Context *ctx = (Context *) calloc(1, sizeof(Context));
-
-      ctx->type = EIOTYPE::WRITE;
-
-      ctx->b = b;
-
       #ifdef linux
 
       int rc = write(iFD, b, l);
@@ -199,10 +193,18 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #else
 
+      Context *ctx = (Context *) calloc(1, sizeof(Context));
+
+      ctx->type = EIOTYPE::WRITE;
+
+      ctx->b = (uint8_t *) calloc(l, 1);
+
+      memmove((void *)ctx->b, b, l);
+
       (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
       (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-      BOOL fRet = WriteFile(iFD, (LPVOID) b, l, NULL, &ctx->ol);
+      BOOL fRet = WriteFile(iFD, (LPVOID) ctx->b, l, NULL, &ctx->ol);
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
