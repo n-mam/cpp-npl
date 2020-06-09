@@ -114,7 +114,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << (void *)this << " " << GetName() << " CDevice::Read() not connected\n";
+        std::cout << iName << " CDevice::Read() not connected\n";
         return nullptr;
       }
 
@@ -138,7 +138,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if ((int)ctx->n == -1)
       {
-        std::cout << "CDevice::Read read() failed, error : " << strerror(errno) << "\n";
+        std::cout << iName << " read() failed, error : " << strerror(errno) << "\n";
 
         if (!b)
         {
@@ -163,7 +163,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
-        std::cout << (void *)this << " " << GetName() << " ReadFile failed : " << GetLastError() << "\n";
+        std::cout << iName << " ReadFile failed : " << GetLastError() << "\n";
       }
 
       return nullptr;
@@ -175,7 +175,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << (void *)this << " " << GetName() << " CDevice::Write() not connected\n";
+        std::cout << iName << " CDevice::Write() not connected\n";
         return;
       }
 
@@ -187,7 +187,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (rc == -1)
       {
-        std::cout << "CDevice::Write() failed, error : " << strerror(errno) << "\n";
+        std::cout << iName << "CDevice::Write() failed, error : " << strerror(errno) << "\n";
         assert(false);
       }
 
@@ -208,7 +208,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
-        std::cout << (void *)this << " " << GetName() << " WriteFile failed : " << GetLastError() << "\n";
+        std::cout << iName << " WriteFile() failed : " << GetLastError() << "\n";
       }
 
       #endif
