@@ -1,36 +1,51 @@
 #include <CDispatcher.hpp>
 #include <CDeviceSocket.hpp>
 #include <CProtocolFTP.hpp>
+#include <CProtocolWSS.hpp>
 
 namespace NPL 
 {
   auto make_dispatcher(void)
   {
-    auto D = std::make_shared<CDispatcher>();
+    auto d = std::make_shared<CDispatcher>();
 
-    D->InitializeControl();
+    d->InitializeControl();
 
-    return D;
+    return d;
   }
 
   auto D = make_dispatcher();
   
-  auto make_ftp(const std::string& host, int port, FTPS ftps = FTPS::None)
+  auto make_ftp(const std::string& host, int port, TLS ftps = TLS::NO)
   {
     auto cc = std::make_shared<CDeviceSocket>();
     auto ftp = std::make_shared<CProtocolFTP>();    
 
     cc->SetHostAndPort(host, port);
 
-    ftp->SetFTPS(ftps);
+    cc->SetTLS(ftps);
 
-    cc->SetName("cc");
+    cc->SetName("ftp-cc");
 
     ftp->SetName("ftp");
 
-    NPL::D->AddEventListener(cc)->AddEventListener(ftp);
+    D->AddEventListener(cc)->AddEventListener(ftp);
 
     return ftp;
+  }
+
+  auto make_websocket(const std::string& host, int port, TLS tls = TLS::NO)
+  {
+    auto cc = std::make_shared<CDeviceSocket>();
+    auto ws = std::make_shared<CProtocolWS>(); 
+
+    cc->SetHostAndPort(host, port);
+
+    cc->SetTLS(tls);
+
+    cc->SetName("ws-cc");
+
+    return ws;
   }
 
 } //namespace NPL

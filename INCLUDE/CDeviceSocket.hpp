@@ -13,6 +13,13 @@ namespace NPL {
 
 using TOnHandshake = std::function<void (void)>;
 
+enum class TLS : uint8_t
+{
+  NO = 0,
+  YES,
+  Implicit //ftp
+};
+
 enum ESocketType : uint8_t
 {
   ESocketInvalid = 0,
@@ -217,6 +224,16 @@ class CDeviceSocket : public CDevice
         unsigned long mode = blocking ? 0 : 1;
         return (ioctlsocket((SOCKET)sock, FIONBIO, &mode) == 0) ? true : false;
       #endif
+    }
+
+    virtual TLS GetTLS(void)
+    {
+      return iTLS;
+    }
+
+    virtual void SetTLS(TLS tls)
+    {
+      iTLS = tls;
     }
 
     virtual bool IsClientSocket(void)
@@ -475,6 +492,8 @@ class CDeviceSocket : public CDevice
     uint32_t iSocketType = ESocketType::ESocketInvalid;
 
     bool iStopped = false;
+
+    TLS iTLS = TLS::NO;
 
     SSL_CTX *ctx = nullptr;
 

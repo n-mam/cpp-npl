@@ -14,13 +14,6 @@
 
 namespace NPL {
 
-enum class FTPS : uint8_t
-{
-  None = 0,
-  Implicit,
-  Explicit
-};
-
 enum class DCProt : uint8_t
 {
   Clear = 0,
@@ -146,14 +139,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       CProtocol::Stop();
     }
 
-    virtual void SetFTPS(FTPS ftps)
-    {
-      iFTPS = ftps;
-    }
-
   protected:
-
-    FTPS iFTPS = FTPS::None;
 
     DCProt iDCProt = DCProt::Clear;
 
@@ -286,8 +272,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void SetDCProtLevel(DCProt P)
     {
-      if (iFTPS == FTPS::Implicit || 
-          iFTPS == FTPS::Explicit)
+      TLS tls = GetChannelTLS(iTarget.lock());
+
+      if (tls == TLS::YES || tls == TLS::Implicit)
       {
         iCmdQ.emplace_back("PBSZ", "0", "", nullptr, nullptr);
 
@@ -346,7 +333,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void CheckExplicitFTPS(void)
     {
-      if (iFTPS == FTPS::Explicit)
+      TLS tls = GetChannelTLS(iTarget.lock());
+
+      if (tls == TLS::YES)
       {
         iProtocolState = "AUTH";
         SendCommand("AUTH", "TLS");
@@ -405,7 +394,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       iDataChannel = std::make_shared<CDeviceSocket>();
 
-      iDataChannel->SetName("dc");
+      iDataChannel->SetName("ftp-dc");
 
       auto observer = std::make_shared<CListener>(
         [this]() {
@@ -653,7 +642,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       CProtocol::OnConnect();
 
-      if (iFTPS == FTPS::Implicit)
+      TLS tls = GetChannelTLS(iTarget.lock());
+
+      if (tls == TLS::Implicit)
       {
         DoCCHandshake();
       }
@@ -667,7 +658,8 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         std::dynamic_pointer_cast<CDeviceSocket>
           (cc)->InitializeSSL([this] () {
-            if (iFTPS == FTPS::Explicit)
+            TLS tls = GetChannelTLS(iTarget.lock()); 
+            if (tls == TLS::YES)
             {
               iProtocolState = "USER";
               SendCommand("USER", iUserName);

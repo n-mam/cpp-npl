@@ -1,6 +1,8 @@
 #include <iostream>
-
 #include <npl.hpp>
+
+void Test_FTP(std::string&, int);
+void Test_WSS(std::string&, int);
 
 int main(int argc, char *argv[])
 {
@@ -13,10 +15,18 @@ int main(int argc, char *argv[])
   auto host = std::string(argv[1]);
   auto port = std::stoi(argv[2]);
 
+  //Test_FTP(host, port);
+  Test_WSS(host, port);
+
+  return 0;
+}
+
+void Test_FTP(std::string& host, int port)
+{
   /**
    * Create an FTP object.
    */
-  auto ftp = NPL::make_ftp(host, port, NPL::FTPS::Explicit);
+  auto ftp = NPL::make_ftp(host, port, NPL::TLS::YES);
 
   /**
    * Set the login credentials.
@@ -96,7 +106,14 @@ int main(int argc, char *argv[])
    */
   ftp->Quit();
 
-  getchar();
+  getchar();  
+}
 
-  return 0;
+void Test_WSS(std::string& host, int port)
+{
+  auto wss = NPL::make_websocket(host, port, TLS::YES);
+
+  wss->StartServer();
+
+  getchar();  
 }
