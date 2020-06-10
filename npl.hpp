@@ -45,6 +45,8 @@ namespace NPL
 
     cc->SetName("ws-cc");
 
+    D->AddEventListener(cc)->AddEventListener(ws);
+
     return ws;
   }
 

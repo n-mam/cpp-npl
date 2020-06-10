@@ -28,7 +28,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       #ifdef linux
       iEventPort = epoll_create1(0);
       #else
-       iEventPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
+      iEventPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 0);
       #endif
 
       if (!iWorker.joinable())
@@ -67,7 +67,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
       iDServer = std::make_shared<CDeviceSocket>();
 
-      iDServer->SetHostAndPort("", 1234);
+      iDServer->SetHostAndPort("0.0.0.0", 1234);
 
       auto observer = std::make_shared<CListener>(
         nullptr, nullptr, nullptr, nullptr,
@@ -106,7 +106,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
       iDClient->SetName("DC-CT");
 
-      iDClient->StartSocketClient();      
+      iDClient->StartSocketClient();
     }
 
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)

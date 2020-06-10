@@ -159,7 +159,7 @@ class CDeviceSocket : public CDevice
       sockaddr_in sa;
 
       sa.sin_family = AF_INET;
-      sa.sin_addr.s_addr=INADDR_ANY;
+      sa.sin_addr.s_addr = inet_addr(iHost.c_str());
       sa.sin_port = htons(iPort);
 
       int fRet = bind((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
@@ -320,10 +320,6 @@ class CDeviceSocket : public CDevice
     {
       assert(IsListeningSocket());
 
-      #ifdef WIN32
-      setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
-      #endif
-
       iConnectedClient.reset();
 
       iConnectedClient = std::make_shared<CDeviceSocket>(iAS);
@@ -332,16 +328,26 @@ class CDeviceSocket : public CDevice
 
       iConnectedClient->SetName("AS");
 
+      iConnectedClient->iConnected = true;
+
       auto D = GetDispatcher();
 
       D->AddEventListener(iConnectedClient);
 
       CDevice::OnAccept();
+
+      #ifdef WIN32
+      iConnectedClient->Read();
+      setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
+      #endif
     }
 
     virtual void OnConnect() override
     {
+      assert(IsClientSocket());
+
       CDevice::OnConnect();
+
       #ifdef WIN32
       CDevice::Read();
       setsockopt((SOCKET)iFD, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0 );

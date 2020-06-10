@@ -7,7 +7,7 @@
 <body>
 <script>
 
-let sock = new WebSocket("ws://127.0.0.1::1235");
+let sock = new WebSocket("ws://localhost:8080");
 
 sock.onopen = function(e) {
   alert("[open] Connection established");

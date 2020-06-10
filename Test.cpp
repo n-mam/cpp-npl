@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
   auto host = std::string(argv[1]);
   auto port = std::stoi(argv[2]);
 
-  //Test_FTP(host, port);
+  /* Test_FTP(host, port); */
   Test_WSS(host, port);
 
   return 0;
@@ -111,9 +111,9 @@ void Test_FTP(std::string& host, int port)
 
 void Test_WSS(std::string& host, int port)
 {
-  auto wss = NPL::make_websocket(host, port, TLS::YES);
+  auto ws = NPL::make_websocket(host, port, TLS::YES);
 
-  wss->StartServer();
+  ws->StartServer();
 
   getchar();  
 }
