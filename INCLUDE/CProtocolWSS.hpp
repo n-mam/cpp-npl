@@ -1,9 +1,9 @@
 #ifndef PROTOCOLWS_HPP
 #define PROTOCOLWS_HPP
 
-#include <CProtocol.hpp>
+#include <CProtocolHTTP.hpp>
 
-class CProtocolWS : public CProtocol<uint8_t, uint8_t>
+class CProtocolWS : public CProtocolHTTP
 {
 
   protected:
