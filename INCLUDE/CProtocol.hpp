@@ -16,24 +16,32 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual ~CProtocol() {}
 
-    virtual void Start(bool client = true)
+    virtual void StartClient(void)
     {
-      auto sub = (this->iTarget).lock();
+      auto target = (this->iTarget).lock();
 
-      if (sub)
+      if (target)
       {
-        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(sub);
+        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
 
         if (sock)
         {
-          if (client)
-          {
-            sock->StartSocketClient();
-          }
-          else
-          {
-            sock->StartSocketServer();
-          }
+          sock->StartSocketClient();
+        }
+      }
+    }
+
+    virtual void StartServer(void)
+    {
+      auto target = (this->iTarget).lock();
+
+      if (target)
+      {
+        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
+
+        if (sock)
+        {
+          sock->StartSocketServer();
         }
       }
     }

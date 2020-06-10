@@ -24,10 +24,10 @@ int main(int argc, char *argv[])
   ftp->SetCredentials("ftpuser", "ftpuser");
 
   /**
-   * Start the protocol. This would asynchronously
+   * Start the protocol client. This would asynchronously
    * trigger connect and the login sequence
    */
-  ftp->Start();
+  ftp->StartClient();
 
   DCProt protection = DCProt::Protected;
 

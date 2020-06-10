@@ -1,5 +1,5 @@
-#ifndef FTPSEGMENTER_HPP
-#define FTPSEGMENTER_HPP
+#ifndef PROTOCOLFTP_HPP
+#define PROTOCOLFTP_HPP
 
 #include <CProtocol.hpp>
 #include <CListener.hpp>
@@ -681,4 +681,4 @@ using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;
 
 } //npl namespace
 
-#endif //FTPSEGMENTER_HPP
+#endif //PROTOCOLFTP_HPP
