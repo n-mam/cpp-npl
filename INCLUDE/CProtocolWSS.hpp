@@ -15,8 +15,26 @@ class CProtocolWS : public CProtocolHTTP
 
     virtual bool IsMessageComplete(const std::vector<uint8_t>& b) override
     {
+      bool fRet = false;
+
+      if (iWsHandshakeDone)
+      {
+        fRet = IsWSMessageComplete(b);
+      }
+      else
+      {
+        fRet = CProtocolHTTP::IsMessageComplete(b);
+      }
+
+      return fRet;
+    }
+
+    virtual bool IsWSMessageComplete(const std::vector<uint8_t>& b)
+    {
       return false;
     }
+
+    bool iWsHandshakeDone = false;
 };
 
 #endif //PROTOCOLWS_HPP
