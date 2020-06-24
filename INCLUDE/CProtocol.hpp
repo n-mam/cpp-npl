@@ -3,7 +3,10 @@
 
 #include <CSubject.hpp>
 
+#include <map>
 #include <functional>
+
+namespace NPL {
 
 using TProtocolEventCbk = std::function<void (const std::string&, char)>;
 
@@ -18,41 +21,31 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void StartClient(void)
     {
-      auto target = (this->iTarget).lock();
+      auto sock = GetTargetSocketDevice();
 
-      if (target)
+      if (sock)
       {
-        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
-
-        if (sock)
-        {
-          sock->StartSocketClient();
-        }
+        sock->StartSocketClient();
       }
     }
 
     virtual void StartServer(void)
     {
-      auto target = (this->iTarget).lock();
+      auto sock = GetTargetSocketDevice();
 
-      if (target)
+      if (sock)
       {
-        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
-
-        if (sock)
-        {
-          sock->StartSocketServer();
-        }
+        sock->StartSocketServer();
       }
     }
 
     virtual void Stop(void)
     {
-      auto cc = (this->iTarget).lock();
+      auto sock = GetTargetSocketDevice();
 
-      if (cc)
+      if (sock)
       {
-        std::dynamic_pointer_cast<CDeviceSocket>(cc)->StopSocket();
+        sock->StopSocket();
       }      
     }
 
@@ -120,7 +113,6 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void StateMachine(const std::vector<T1>& buffer)
     {
-      return; 
     }
 
     virtual void NotifyState(const std::string& command, char result)
@@ -129,6 +121,20 @@ class CProtocol : public CSubject<T1, T2>
       {
         iEventCallback(command, result);
       }
+    }
+
+    virtual SPCDeviceSocket GetTargetSocketDevice(void)
+    {
+      auto target = (this->iTarget).lock();
+
+      if (target)
+      {
+        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
+
+        return sock;
+      }
+
+      return nullptr;
     }
 
     std::string iUserName;
@@ -146,5 +152,7 @@ class CProtocol : public CSubject<T1, T2>
 
 template <typename T1 = uint8_t, typename T2 = uint8_t>
 using SPCProtocol = std::shared_ptr<CProtocol<T1, T2>>;
+
+} //namspace NPL
 
 #endif //PROTOCOL_HPP

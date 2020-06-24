@@ -1,11 +1,34 @@
 #ifndef PROTOCOLWS_HPP
 #define PROTOCOLWS_HPP
 
+#include <CMessage.hpp>
 #include <CProtocolHTTP.hpp>
+
+namespace NPL {
 
 class CProtocolWS : public CProtocolHTTP
 {
   protected:
+
+    virtual void StateMachine(const std::vector<uint8_t>& m) override
+    {
+      if (!iWsHandshakeDone)
+      {
+        auto sock = GetTargetSocketDevice();
+
+        if (sock)
+        {
+          if (sock->IsClientSocket())
+          {
+            BuildClientHello();
+          }
+          else
+          {
+            BuildServerHello(m);
+          }
+        }
+      }
+    }
 
     virtual bool IsMessageComplete(const std::vector<uint8_t>& b) override
     {
@@ -28,24 +51,31 @@ class CProtocolWS : public CProtocolHTTP
       return false;
     }
 
+    virtual void BuildClientHello()
+    {
+
+    }
+
+    virtual void BuildServerHello(const std::vector<uint8_t>& m)
+    {
+      CHTTPMessage clientHello(m);
+    }
+
     virtual void OnAccept(void) override
     {
-      auto target = (this->iTarget).lock();
+      auto sock = GetTargetSocketDevice();
 
-      if (target)
+      if (sock)
       {
-        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
+        auto aso = std::make_shared<CProtocolWS>();
 
-        if (sock)
-        {
-          auto aso = std::make_shared<CProtocolWS>();
-
-          sock->iConnectedClient->AddEventListener(aso);
-        }
+        sock->iConnectedClient->AddEventListener(aso);
       }
     }
 
     bool iWsHandshakeDone = false;
 };
+
+} // namespace npl
 
 #endif //PROTOCOLWS_HPP

@@ -3,6 +3,8 @@
 
 #include <CProtocol.hpp>
 
+namespace NPL {
+
 class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 {
   public:
@@ -16,29 +18,49 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
       bool bodyReceived = false;
       int bodyLength = 0;
 
-      std::string message((char *) b.data(), b.size());
+      std::string m((char *) b.data(), b.size());
 
-      if (message.find("\r\n") != std::string::npos)
+      if (m.find("\r\n") != std::string::npos)
       {
          firstLineReceived = true;
 
-         if (message.find("\r\n\r\n") != std::string::npos)
+         size_t endofHeaders = m.find("\r\n\r\n");
+
+         if (endofHeaders != std::string::npos)
          {
            headersReceived = true;
 
-           if (message.find("Content-Length") != std::string::npos)
+           size_t pos = m.find("Content-Length");
+
+           if (pos != std::string::npos)
            {
-             //bodyLength 
+             pos += strlen("Content-Length: ");
+
+             bodyLength = std::stoi(
+                std::string(m, 
+                            pos, 
+                            m.find("\r\n", pos) - pos - 1));
+
+             if (bodyLength)
+             {
+               size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
+
+               if (m.size() == total)
+               {
+                 bodyReceived = true;
+               }
+             } 
            }
          }
       }
 
-      return firstLineReceived &&
+      return firstLineReceived && 
              headersReceived && 
              (bodyLength ? bodyReceived : true);
     }
 
-
 };
+
+} //namespace NPL
 
 #endif //PROTOCOLHTTP_HPP

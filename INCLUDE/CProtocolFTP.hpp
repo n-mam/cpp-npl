@@ -652,19 +652,18 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void DoCCHandshake()
     {
-      auto cc = iTarget.lock();
+      auto sock = GetTargetSocketDevice();
 
-      if (cc)
+      if (sock)
       {
-        std::dynamic_pointer_cast<CDeviceSocket>
-          (cc)->InitializeSSL([this] () {
-            TLS tls = GetChannelTLS(iTarget.lock()); 
-            if (tls == TLS::YES)
-            {
-              iProtocolState = "USER";
-              SendCommand("USER", iUserName);
-            }
-          });
+        sock->InitializeSSL([this] () {
+          TLS tls = GetChannelTLS(iTarget.lock()); 
+          if (tls == TLS::YES)
+          {
+            iProtocolState = "USER";
+            SendCommand("USER", iUserName);
+          }
+        });
       }
     }
 };

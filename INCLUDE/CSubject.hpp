@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <functional>
 
+namespace NPL {
+
 template <typename T1, typename T2>
 class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
 {
@@ -292,5 +294,7 @@ using SPCSubject = std::shared_ptr<CSubject<T1, T2>>;
 
 template<typename T1, typename T2>
 using WPCSubject = std::weak_ptr<CSubject<T1, T2>>;
+
+} //namespace NPL
 
 #endif //COMPONENT_HPP
