@@ -8,23 +8,23 @@
             "name": "(Windows) FTP Test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Debug/Test.exe",
+            "program": "${workspaceFolder}/build/Debug/Test.exe",
             "args": ["127.0.0.1", "21"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false
+            "externalConsole": true
         },
         {
             "name": "(Windows) Websocket test",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/Debug/Test.exe",
+            "program": "${workspaceFolder}/build/Debug/Test.exe",
             "args": ["0.0.0.0", "8080"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false
+            "externalConsole": true
         }        
     ]
 }

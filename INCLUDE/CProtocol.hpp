@@ -116,9 +116,12 @@ class CProtocol : public CSubject<T1, T2>
 
   protected:
 
-    virtual void StateMachine(const std::vector<T1>& buffer) = 0;
-
     virtual bool IsMessageComplete(const std::vector<T1>& b) = 0;
+
+    virtual void StateMachine(const std::vector<T1>& buffer)
+    {
+      return; 
+    }
 
     virtual void NotifyState(const std::string& command, char result)
     {

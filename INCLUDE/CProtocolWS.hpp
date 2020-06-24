@@ -5,13 +5,7 @@
 
 class CProtocolWS : public CProtocolHTTP
 {
-
   protected:
-
-    virtual void StateMachine(const std::vector<uint8_t>& msg) override
-    {
-
-    }
 
     virtual bool IsMessageComplete(const std::vector<uint8_t>& b) override
     {
@@ -32,6 +26,23 @@ class CProtocolWS : public CProtocolHTTP
     virtual bool IsWSMessageComplete(const std::vector<uint8_t>& b)
     {
       return false;
+    }
+
+    virtual void OnAccept(void) override
+    {
+      auto target = (this->iTarget).lock();
+
+      if (target)
+      {
+        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
+
+        if (sock)
+        {
+          auto aso = std::make_shared<CProtocolWS>();
+
+          sock->iConnectedClient->AddEventListener(aso);
+        }
+      }
     }
 
     bool iWsHandshakeDone = false;

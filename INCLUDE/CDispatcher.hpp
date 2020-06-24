@@ -58,6 +58,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
         {
           CloseHandle(iEventPort);
         }
+
       #endif
     }
 
@@ -69,7 +70,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
       iDServer->SetHostAndPort("0.0.0.0", 1234);
 
-      auto observer = std::make_shared<CListener>(
+      auto lso = std::make_shared<CListener>(
         nullptr, nullptr, nullptr, nullptr,
         [this] ()
         {
@@ -87,12 +88,11 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
               }
             }
           );
-
           this->iDServer->iConnectedClient->AddEventListener(aso);
         }
       );
 
-      GetDispatcher()->AddEventListener(iDServer)->AddEventListener(observer);
+      GetDispatcher()->AddEventListener(iDServer)->AddEventListener(lso);
 
       iDServer->SetName("DC-LS");
 

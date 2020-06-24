@@ -1,9 +1,9 @@
 #include <CDispatcher.hpp>
 #include <CDeviceSocket.hpp>
 #include <CProtocolFTP.hpp>
-#include <CProtocolWSS.hpp>
+#include <CProtocolWS.hpp>
 
-namespace NPL 
+namespace NPL
 {
   auto make_dispatcher(void)
   {
@@ -37,17 +37,17 @@ namespace NPL
   auto make_websocket(const std::string& host, int port, TLS tls = TLS::NO)
   {
     auto cc = std::make_shared<CDeviceSocket>();
-    auto ws = std::make_shared<CProtocolWS>(); 
-
-    cc->SetHostAndPort(host, port);
+    auto lso = std::make_shared<CProtocolWS>();
 
     cc->SetTLS(tls);
 
     cc->SetName("ws-cc");
 
-    D->AddEventListener(cc)->AddEventListener(ws);
+    cc->SetHostAndPort(host, port);
 
-    return ws;
+    D->AddEventListener(cc)->AddEventListener(lso);
+
+    return lso;
   }
 
 } //namespace NPL
