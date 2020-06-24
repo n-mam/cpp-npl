@@ -2,6 +2,7 @@
 #define PROTOCOLWS_HPP
 
 #include <CMessage.hpp>
+#include <Encryption.hpp>
 #include <CProtocolHTTP.hpp>
 
 NS_NPL
@@ -16,16 +17,27 @@ class CProtocolWS : public CProtocolHTTP
       {
         auto sock = GetTargetSocketDevice();
 
-        if (sock)
+        assert(sock);
+
+        bool fRet = false;
+
+        if (sock->IsClientSocket())
         {
-          if (sock->IsClientSocket())
+          fRet = ValidateServerHello(m);
+        }
+        else
+        {
+          fRet = ValidateClientHello(m);
+          
+          if (fRet)
           {
-            BuildClientHello();
+            fRet = SendServerHello(m);
           }
-          else
-          {
-            BuildServerHello(m);
-          }
+        }
+
+        if (fRet)
+        {
+          iWsHandshakeDone = true;
         }
       }
     }
@@ -51,14 +63,55 @@ class CProtocolWS : public CProtocolHTTP
       return false;
     }
 
-    virtual void BuildClientHello()
+    virtual bool ValidateClientHello(const std::vector<uint8_t>& m)
     {
-
+      return true; //todo
     }
 
-    virtual void BuildServerHello(const std::vector<uint8_t>& m)
+    virtual bool ValidateServerHello(const std::vector<uint8_t>& m)
     {
-      CHTTPMessage clientHello(m);
+      return true; //todo
+    }
+
+    virtual bool SendServerHello(const std::vector<uint8_t>& m)
+    {
+      CHTTPMessage cHello(m);
+
+      auto key = cHello.GetHeader("Sec-WebSocket-Key");
+
+      assert(key.size());
+
+      key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+      unsigned char hash[20] = { '\0' };
+      unsigned int hashlen;
+
+      MessageDigest(
+        (const unsigned char *) key.c_str(), 
+        key.size(),
+        hash,
+        &hashlen);
+
+      unsigned char base64[128] = { '\0' };
+
+      Base64Encode(base64, hash, hashlen);
+
+      std::stringstream sHello;
+
+      sHello << "HTTP/1.1 101 Switching Protocols\r\n";
+      sHello << "Upgrade: websocket\r\n";
+      sHello << "Connection: Upgrade\r\n";
+      sHello << "Sec-WebSocket-Accept: " << base64 << "\r\n";      
+      sHello << "\r\n";
+
+      Write((uint8_t *) sHello.str().c_str(), sHello.str().size(), 0);
+
+      return true; //todo
+    }
+
+    virtual bool SendClientHello(void)
+    {
+      return false; //fixme
     }
 
     virtual void OnAccept(void) override
@@ -71,6 +124,11 @@ class CProtocolWS : public CProtocolHTTP
 
         sock->iConnectedClient->AddEventListener(aso);
       }
+    }
+
+    virtual void OnConnect(void) override
+    {
+      SendClientHello();
     }
 
     bool iWsHandshakeDone = false;

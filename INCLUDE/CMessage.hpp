@@ -53,17 +53,22 @@ class CHTTPMessage : public CMessage
 
       std::string line;
 
-      while (std::getline(ss, line, '\r'))
+      while (std::getline(ss, line, '\n'))
       {
+        line.pop_back();
+
         size_t index = line.find(": ");
-        
-        std::string key, value;
 
-        key = line.substr(0, index);
-        
-        value = line.substr(index + 2);
+        if (index != std::string::npos)
+        {
+          std::string key, value;
 
-        SetHeader(key, value);
+          key = line.substr(0, index);
+
+          value = line.substr(index + 2);
+
+          SetHeader(key, value);
+        }
       }
     }
 };
