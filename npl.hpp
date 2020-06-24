@@ -3,54 +3,54 @@
 #include <CProtocolFTP.hpp>
 #include <CProtocolWS.hpp>
 
-namespace NPL
+NS_NPL
+
+auto make_dispatcher(void)
 {
-  auto make_dispatcher(void)
-  {
-    auto d = std::make_shared<CDispatcher>();
+  auto d = std::make_shared<CDispatcher>();
 
-    d->InitializeControl();
+  d->InitializeControl();
 
-    return d;
-  }
+  return d;
+}
 
-  auto D = make_dispatcher();
+auto D = make_dispatcher();
   
-  auto make_ftp(const std::string& host, int port, TLS ftps = TLS::NO)
-  {
-    auto cc = std::make_shared<CDeviceSocket>();
-    auto ftp = std::make_shared<CProtocolFTP>();    
+auto make_ftp(const std::string& host, int port, TLS ftps = TLS::NO)
+{
+  auto cc = std::make_shared<CDeviceSocket>();
+  auto ftp = std::make_shared<CProtocolFTP>();    
 
-    cc->SetHostAndPort(host, port);
+  cc->SetHostAndPort(host, port);
 
-    cc->SetTLS(ftps);
+  cc->SetTLS(ftps);
 
-    cc->SetName("ftp-cc");
+  cc->SetName("ftp-cc");
 
-    ftp->SetName("ftp");
+  ftp->SetName("ftp");
 
-    D->AddEventListener(cc)->AddEventListener(ftp);
+  D->AddEventListener(cc)->AddEventListener(ftp);
 
-    return ftp;
-  }
+  return ftp;
+}
 
-  auto make_websocket(const std::string& host, int port, TLS tls = TLS::NO)
-  {
-    auto cc = std::make_shared<CDeviceSocket>();
-    auto lso = std::make_shared<CProtocolWS>();
+auto make_websocket(const std::string& host, int port, TLS tls = TLS::NO)
+{
+  auto cc = std::make_shared<CDeviceSocket>();
+  auto lso = std::make_shared<CProtocolWS>();
 
-    cc->SetTLS(tls);
+  cc->SetTLS(tls);
 
-    cc->SetName("ws-cc");
+  cc->SetName("ws-cc");
 
-    cc->SetHostAndPort(host, port);
+  cc->SetHostAndPort(host, port);
 
-    D->AddEventListener(cc)->AddEventListener(lso);
+  D->AddEventListener(cc)->AddEventListener(lso);
 
-    return lso;
-  }
+  return lso;
+}
 
-} //namespace NPL
+NS_END
 
 void TEST_DISPATCHER()
 {

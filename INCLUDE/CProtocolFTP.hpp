@@ -12,7 +12,7 @@
 #include <cstring>
 #include <functional>
 
-namespace NPL {
+NS_NPL
 
 enum class DCProt : uint8_t
 {
@@ -670,6 +670,6 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
 using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;
 
-} //npl namespace
+NS_END
 
 #endif //PROTOCOLFTP_HPP

@@ -3,7 +3,7 @@
 
 #include <CProtocol.hpp>
 
-namespace NPL {
+NS_NPL
 
 class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 {
@@ -61,6 +61,6 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 
 };
 
-} //namespace NPL
+NS_END
 
 #endif //PROTOCOLHTTP_HPP

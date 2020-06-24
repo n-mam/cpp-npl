@@ -6,7 +6,7 @@
 #include <map>
 #include <functional>
 
-namespace NPL {
+NS_NPL
 
 using TProtocolEventCbk = std::function<void (const std::string&, char)>;
 
@@ -153,6 +153,6 @@ class CProtocol : public CSubject<T1, T2>
 template <typename T1 = uint8_t, typename T2 = uint8_t>
 using SPCProtocol = std::shared_ptr<CProtocol<T1, T2>>;
 
-} //namspace NPL
+NS_END
 
 #endif //PROTOCOL_HPP

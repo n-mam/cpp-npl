@@ -9,7 +9,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-namespace NPL {
+NS_NPL
 
 using TOnHandshake = std::function<void (void)>;
 
@@ -538,7 +538,7 @@ class CDeviceSocket : public CDevice
 using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
 using WPCDeviceSocket = std::weak_ptr<CDeviceSocket>;
 
-} //namespace NPL
+NS_END
 
 #ifdef WIN32
  WSADATA wsaData;

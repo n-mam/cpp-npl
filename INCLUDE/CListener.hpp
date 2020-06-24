@@ -5,7 +5,7 @@
 
 #include <CSubject.hpp>
 
-namespace NPL {
+NS_NPL
 
 using TListenerOnConnect = std::function<void (void)>;
 using TListenerOnRead = std::function<void (const uint8_t *b, size_t n)>;
@@ -82,6 +82,6 @@ class CListener : public CSubject<uint8_t, uint8_t>
     TListenerOnDisconnect iCbkDisconnect;
 };
 
-} //namespace NPL
+NS_END
 
 #endif //LISTENER_HPP

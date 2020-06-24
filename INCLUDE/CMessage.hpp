@@ -6,7 +6,7 @@
 #include <vector>
 #include <sstream>
 
-namespace NPL {
+NS_NPL
 
 class CMessage
 {
@@ -68,6 +68,6 @@ class CHTTPMessage : public CMessage
     }
 };
 
-} //namespace NPL
+NS_END
 
 #endif //MESSAGE_HPP

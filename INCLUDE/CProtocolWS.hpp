@@ -4,7 +4,7 @@
 #include <CMessage.hpp>
 #include <CProtocolHTTP.hpp>
 
-namespace NPL {
+NS_NPL
 
 class CProtocolWS : public CProtocolHTTP
 {
@@ -76,6 +76,6 @@ class CProtocolWS : public CProtocolHTTP
     bool iWsHandshakeDone = false;
 };
 
-} // namespace npl
+NS_END
 
 #endif //PROTOCOLWS_HPP

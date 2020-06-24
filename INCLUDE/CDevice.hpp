@@ -12,7 +12,7 @@
 #include <string.h>
 #endif
 
-namespace NPL {
+NS_NPL
 
 enum EDeviceType : uint8_t
 {
@@ -243,6 +243,6 @@ const char EIOToChar(EIOTYPE t)
 using SPCDevice = std::shared_ptr<CDevice>;
 using WPCDevice = std::weak_ptr<CDevice>;
 
-} //namespace NPL
+NS_END
 
 #endif //DEVICE_HPP

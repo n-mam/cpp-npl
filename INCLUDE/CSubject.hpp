@@ -1,6 +1,9 @@
 #ifndef COMPONENT_HPP
 #define COMPONENT_HPP
 
+#define NS_NPL namespace NPL {
+#define NS_END }
+
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -9,7 +12,7 @@
 #include <algorithm>
 #include <functional>
 
-namespace NPL {
+NS_NPL
 
 template <typename T1, typename T2>
 class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
@@ -295,6 +298,6 @@ using SPCSubject = std::shared_ptr<CSubject<T1, T2>>;
 template<typename T1, typename T2>
 using WPCSubject = std::weak_ptr<CSubject<T1, T2>>;
 
-} //namespace NPL
+NS_END
 
 #endif //COMPONENT_HPP
