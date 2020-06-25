@@ -73,6 +73,19 @@ class CHTTPMessage : public CMessage
     }
 };
 
+class CWSMessage : public CMessage
+{
+  public:
+    
+    
+  protected:
+
+    virtual void ParseMessage() override
+    {
+
+    }
+};
+
 NS_END
 
 #endif //MESSAGE_HPP

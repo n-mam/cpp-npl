@@ -1,6 +1,7 @@
 #ifndef PROTOCOLWS_HPP
 #define PROTOCOLWS_HPP
 
+#include <Util.hpp>
 #include <CMessage.hpp>
 #include <Encryption.hpp>
 #include <CProtocolHTTP.hpp>
@@ -15,11 +16,9 @@ class CProtocolWS : public CProtocolHTTP
     {
       if (!iWsHandshakeDone)
       {
-        auto sock = GetTargetSocketDevice();
-
-        assert(sock);
-
         bool fRet = false;
+
+        auto sock = GetTargetSocketDevice();
 
         if (sock->IsClientSocket())
         {
@@ -28,7 +27,7 @@ class CProtocolWS : public CProtocolHTTP
         else
         {
           fRet = ValidateClientHello(m);
-          
+
           if (fRet)
           {
             fRet = SendServerHello(m);
@@ -38,6 +37,7 @@ class CProtocolWS : public CProtocolHTTP
         if (fRet)
         {
           iWsHandshakeDone = true;
+          std::cout << "websocket handshake done\n";
         }
       }
     }
@@ -48,7 +48,7 @@ class CProtocolWS : public CProtocolHTTP
 
       if (iWsHandshakeDone)
       {
-        fRet = IsWSMessageComplete(b);
+        fRet = IsMessageComplete(b.data(), b.size());
       }
       else
       {
@@ -58,9 +58,82 @@ class CProtocolWS : public CProtocolHTTP
       return fRet;
     }
 
-    virtual bool IsWSMessageComplete(const std::vector<uint8_t>& b)
+    virtual bool IsMessageComplete(const uint8_t *b, size_t l)
     {
-      return false;
+      bool fRet = false;
+
+      if (l < 2) return fRet;
+
+      uint8_t opcode = b[0] & 0x0F;
+
+      bool bMasked = false;
+
+      if (b[1] & 0x80)
+      {
+        bMasked = true;
+      }
+
+      size_t payloadLength = 0;
+      size_t maskingKeyIndex = 0;
+
+      unsigned char indicator = b[1] & 0x7F;
+
+      if (indicator <= 125)
+      { /*
+         * if 0-125, that is the payload length
+         */
+        payloadLength = indicator;
+        maskingKeyIndex = 2; /** third byte */
+      }
+      else if (indicator == 126 && l >= (2 + 2))
+      { /*
+         * If 126, the following 2 bytes interpreted as a 
+         * 16-bit unsigned integer are the payload length
+         */
+        payloadLength = BTOL(b + 2, 2);
+        maskingKeyIndex = 4;
+      }
+      else if (indicator == 127 && l >= (2 + 8))
+      { /*
+         * If 127, the following 8 bytes interpreted as a 
+         * 64-bit unsigned integer (the most significant bit 
+         * MUST be 0) are the payload length
+         */
+        payloadLength = BTOL(b + 2, 8);
+        maskingKeyIndex = 10;
+      }
+      else
+      {
+        assert(false);
+      }
+
+      unsigned char maskingKey[4];
+
+      if (bMasked && (l >= (maskingKeyIndex + 4)))
+      {
+        for (int i = 0; i < 4; i++)
+        {
+          maskingKey[i] = b[maskingKeyIndex + i];
+        }
+      }
+
+      std::string payload;
+
+      size_t payloadIndex = maskingKeyIndex + (bMasked ? 4 : 0);
+
+      if ((payloadIndex + payloadLength) == l)
+      {
+        for (int i = 0; i < payloadLength; i++)
+        {
+          payload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
+        }
+
+        std::cout << payload << "\n";
+
+        fRet = true;
+      }
+
+      return fRet;
     }
 
     virtual bool ValidateClientHello(const std::vector<uint8_t>& m)

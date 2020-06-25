@@ -1,7 +1,7 @@
-#include <openssl/evp.h>
-
 #ifndef ENCRYPTION_HPP
 #define ENCRYPTION_HPP
+
+#include <openssl/evp.h>
 
 int Base64Encode(unsigned char *encoded, const unsigned char *source, int n)
 {
