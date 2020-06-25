@@ -73,6 +73,11 @@ class CProtocolWS : public CProtocolHTTP
       return true; //todo
     }
 
+    virtual bool SendClientHello(void)
+    {
+      return false; //todo
+    }
+
     virtual bool SendServerHello(const std::vector<uint8_t>& m)
     {
       CHTTPMessage cHello(m);
@@ -107,11 +112,6 @@ class CProtocolWS : public CProtocolHTTP
       Write((uint8_t *) sHello.str().c_str(), sHello.str().size(), 0);
 
       return true; //todo
-    }
-
-    virtual bool SendClientHello(void)
-    {
-      return false; //fixme
     }
 
     virtual void OnAccept(void) override
