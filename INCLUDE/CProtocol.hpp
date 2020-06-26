@@ -67,7 +67,6 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void SetClientCallback(TOnClientMessageCbk cbk)
     {
-      assert(iClientMessageCallback ==nullptr);
       iClientMessageCallback = cbk;
     }
 

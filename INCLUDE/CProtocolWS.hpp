@@ -86,7 +86,8 @@ class CProtocolWS : public CProtocolHTTP
         if (iClientMessageCallback)
         {
           iClientMessageCallback(
-            std::dynamic_pointer_cast<CProtocol>(shared_from_this()),
+            std::dynamic_pointer_cast<CProtocol>(
+              shared_from_this()),
             std::string((char *)m.data(), m.size())
           );
         }

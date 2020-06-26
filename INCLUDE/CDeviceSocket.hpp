@@ -193,7 +193,13 @@ class CDeviceSocket : public CDevice
       iSocketType = ESocketType::EListeningSocket;
 
       #ifdef WIN32
+      AcceptNewConnection();
+      #endif
+    }
 
+    #ifdef WIN32
+    virtual void AcceptNewConnection(void)
+    {
       auto AcceptEx = GetExtentionPfn(WSAID_ACCEPTEX, iFD);
 
       uint8_t *b = (uint8_t *) calloc(1, 2 * (sizeof(SOCKADDR_STORAGE) + 16) + sizeof(Context));
@@ -213,9 +219,8 @@ class CDeviceSocket : public CDevice
         sizeof(SOCKADDR_STORAGE) + 16,
         &bytesReceived,
         (LPOVERLAPPED)b);
-      
-      #endif
     }
+    #endif
 
     virtual bool SetSocketBlockingEnabled(FD sock, bool blocking)
     {
@@ -345,6 +350,7 @@ class CDeviceSocket : public CDevice
       #ifdef WIN32
       iConnectedClient->Read();
       setsockopt((SOCKET)iAS, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&(iFD), sizeof(iFD));
+      AcceptNewConnection();
       #endif
     }
 
