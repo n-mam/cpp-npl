@@ -86,6 +86,10 @@ class CWSMessage : public CMessage
     }
 };
 
+using SPCMessage = std::shared_ptr<CMessage>;
+using SPCWSMessage = std::shared_ptr<CWSMessage>;
+using SPCHTTPMessage = std::shared_ptr<CHTTPMessage>;
+
 NS_END
 
 #endif //MESSAGE_HPP

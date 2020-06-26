@@ -4,7 +4,7 @@
 #ifdef linux
 
   #include <fcntl.h>
-  #include <unistd.h>  
+  #include <unistd.h>
   #include <sys/types.h>
   #include <sys/socket.h>
   #include <netinet/in.h>
@@ -17,7 +17,7 @@
 #else
 
   #include <winsock2.h>
-  #include <MSWSock.h>  
+  #include <MSWSock.h>
   #include <Ws2tcpip.h>
   using FD = HANDLE;
 

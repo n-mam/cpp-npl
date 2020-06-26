@@ -1,9 +1,9 @@
 #ifndef PROTOCOL_HPP
 #define PROTOCOL_HPP
 
+#include <CMessage.hpp>
 #include <CSubject.hpp>
 
-#include <map>
 #include <functional>
 
 NS_NPL
@@ -90,7 +90,9 @@ class CProtocol : public CSubject<T1, T2>
       {
         iBuffer.push_back(b[i]);
 
-        if (IsMessageComplete(iBuffer))
+        auto message = IsMessageComplete(iBuffer);
+
+        if (message)
         {
           iMessages.push_back(iBuffer);
           StateMachine(iBuffer);

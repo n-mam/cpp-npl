@@ -54,6 +54,8 @@ class CProtocolWS : public CProtocolHTTP
 
   protected:
 
+    bool iWsHandshakeDone = false;
+
     virtual void StateMachine(const std::vector<uint8_t>& m) override
     {
       if (!iWsHandshakeDone)
@@ -255,8 +257,6 @@ class CProtocolWS : public CProtocolHTTP
     {
       SendClientHello();
     }
-
-    bool iWsHandshakeDone = false;
 };
 
 NS_END

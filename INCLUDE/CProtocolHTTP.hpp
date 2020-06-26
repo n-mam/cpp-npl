@@ -37,9 +37,10 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
              pos += strlen("Content-Length: ");
 
              bodyLength = std::stoi(
-                std::string(m, 
-                            pos, 
-                            m.find("\r\n", pos) - pos - 1));
+                std::string(
+                  m, 
+                  pos, 
+                  m.find("\r\n", pos) - pos - 1));
 
              if (bodyLength)
              {
@@ -49,7 +50,7 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
                {
                  bodyReceived = true;
                }
-             } 
+             }
            }
          }
       }
