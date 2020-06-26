@@ -39,4 +39,12 @@ uint64_t BTOL(const uint8_t *msb, uint8_t size)
    }
 }
 
+void LTOB(uint64_t value, unsigned char *memory, int size)
+{
+  for (int i = 0; i < size; i++)
+  {
+    memory[size - 1 - i] = *((unsigned char *)(&value) + i);
+  }
+}
+
 #endif

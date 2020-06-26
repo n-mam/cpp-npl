@@ -95,10 +95,12 @@ class CDeviceSocket : public CDevice
         SetSocketBlockingEnabled(iFD, false);
 
         sockaddr_in sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sin_family = AF_INET;
 
         inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+
         sa.sin_port = htons(iPort);
-        sa.sin_family = AF_INET;
 
         int rc = connect((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));
 
@@ -119,9 +121,11 @@ class CDeviceSocket : public CDevice
         ctx->type = EIOTYPE::CONNECT;
 
         sockaddr_in sa;
-        ZeroMemory(&sa, sizeof(sa));
+        memset(&sa, 0, sizeof(sa));
         sa.sin_family = AF_INET;
+
         inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+
         sa.sin_port = htons(iPort);
 
         auto ConnectEx = GetExtentionPfn(WSAID_CONNECTEX, iFD);
@@ -157,9 +161,11 @@ class CDeviceSocket : public CDevice
       assert(iPort);
 
       sockaddr_in sa;
-
+      memset(&sa, 0, sizeof(sa));
       sa.sin_family = AF_INET;
-      sa.sin_addr.s_addr = inet_addr(iHost.c_str());
+
+      inet_pton(AF_INET, iHost.c_str(), &sa.sin_addr);
+      
       sa.sin_port = htons(iPort);
 
       int fRet = bind((SOCKET)iFD, (const sockaddr *) &sa, sizeof(sa));

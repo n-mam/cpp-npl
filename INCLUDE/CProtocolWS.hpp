@@ -37,8 +37,13 @@ class CProtocolWS : public CProtocolHTTP
         if (fRet)
         {
           iWsHandshakeDone = true;
-          std::cout << "websocket handshake done\n";
         }
+      }
+      else
+      {
+        SendWebsocketMessage(
+          (uint8_t *)"Hello from server", 
+          strlen("Hello from server"));
       }
     }
 
@@ -185,6 +190,48 @@ class CProtocolWS : public CProtocolHTTP
       Write((uint8_t *) sHello.str().c_str(), sHello.str().size(), 0);
 
       return true; //todo
+    }
+
+    virtual bool SendWebsocketMessage(const uint8_t *data, size_t len)
+    {
+      unsigned char frame[10];
+      int frameLength = 0;
+
+      /* 1000001 */
+      frame[0] = 0x81;
+      frameLength++;
+
+      if (len <= 125)
+      {
+        frame[1] = (unsigned char) len;
+      }
+      else if (len <= 0xFFFF)
+      {
+        frame[1] = 126;
+        frameLength += 2;
+        LTOB(len, frame + 2, 2);
+      }
+      else if (len > 65536)
+      {
+        frame[1] = 127;
+        frameLength += 8;
+        LTOB(len, frame + 2, 8);
+      }
+      else
+      {
+        // what now ?
+      }
+
+      frameLength++;
+
+      std::string message;
+
+      message.insert(0, (char *) frame, frameLength);
+      message.insert(frameLength, (char *) data, len);
+
+      Write((uint8_t *) message.data(), message.size(), 0);
+  
+      return false;
     }
 
     virtual void OnAccept(void) override
