@@ -10,6 +10,48 @@ NS_NPL
 
 class CProtocolWS : public CProtocolHTTP
 {
+  public:
+
+    virtual void SendProtocolMessage(const uint8_t *data, size_t len) override
+    {
+      unsigned char frame[10];
+      int frameLength = 0;
+
+      /* 1000001 */
+      frame[0] = 0x81;
+      frameLength++;
+
+      if (len <= 125)
+      {
+        frame[1] = (unsigned char) len;
+      }
+      else if (len <= 0xFFFF)
+      {
+        frame[1] = 126;
+        frameLength += 2;
+        LTOB(len, frame + 2, 2);
+      }
+      else if (len > 65536)
+      {
+        frame[1] = 127;
+        frameLength += 8;
+        LTOB(len, frame + 2, 8);
+      }
+      else
+      {
+        // what now ?
+      }
+
+      frameLength++;
+
+      std::string message;
+
+      message.insert(0, (char *) frame, frameLength);
+      message.insert(frameLength, (char *) data, len);
+
+      Write((uint8_t *) message.data(), message.size(), 0);
+    }
+
   protected:
 
     virtual void StateMachine(const std::vector<uint8_t>& m) override
@@ -41,9 +83,13 @@ class CProtocolWS : public CProtocolHTTP
       }
       else
       {
-        SendWebsocketMessage(
-          (uint8_t *)"Hello from server", 
-          strlen("Hello from server"));
+        if (iClientMessageCallback)
+        {
+          iClientMessageCallback(
+            std::dynamic_pointer_cast<CProtocol>(shared_from_this()),
+            std::string((char *)m.data(), m.size())
+          );
+        }
       }
     }
 
@@ -133,8 +179,6 @@ class CProtocolWS : public CProtocolHTTP
           payload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
         }
 
-        std::cout << payload << "\n";
-
         fRet = true;
       }
 
@@ -192,48 +236,6 @@ class CProtocolWS : public CProtocolHTTP
       return true; //todo
     }
 
-    virtual bool SendWebsocketMessage(const uint8_t *data, size_t len)
-    {
-      unsigned char frame[10];
-      int frameLength = 0;
-
-      /* 1000001 */
-      frame[0] = 0x81;
-      frameLength++;
-
-      if (len <= 125)
-      {
-        frame[1] = (unsigned char) len;
-      }
-      else if (len <= 0xFFFF)
-      {
-        frame[1] = 126;
-        frameLength += 2;
-        LTOB(len, frame + 2, 2);
-      }
-      else if (len > 65536)
-      {
-        frame[1] = 127;
-        frameLength += 8;
-        LTOB(len, frame + 2, 8);
-      }
-      else
-      {
-        // what now ?
-      }
-
-      frameLength++;
-
-      std::string message;
-
-      message.insert(0, (char *) frame, frameLength);
-      message.insert(frameLength, (char *) data, len);
-
-      Write((uint8_t *) message.data(), message.size(), 0);
-  
-      return false;
-    }
-
     virtual void OnAccept(void) override
     {
       auto sock = GetTargetSocketDevice();
@@ -241,6 +243,8 @@ class CProtocolWS : public CProtocolHTTP
       if (sock)
       {
         auto aso = std::make_shared<CProtocolWS>();
+
+        aso->SetClientCallback(iClientMessageCallback);
 
         sock->iConnectedClient->AddEventListener(aso);
       }

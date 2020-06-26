@@ -15,13 +15,13 @@ sock.onopen = function(e) {
 };
 
 sock.onmessage = function(e) {
-  console.log(`Data received from server : ${e.data}`);
+  console.log(`server : ${e.data}`);
 };
 
 sock.onclose = function(e) {
   if (e.wasClean) 
   {
-    console.log(`Connection closed cleanly, code=${e.code} reason=${e.reason}`);
+    console.log(`Connection closed, code=${e.code} reason=${e.reason}`);
   }
   else 
   {

@@ -1,8 +1,8 @@
 #include <iostream>
 #include <npl.hpp>
 
-void Test_FTP(std::string&, int);
-void Test_WSS(std::string&, int);
+void test_ftp_client(std::string&, int);
+void test_ws_server(std::string&, int);
 
 int main(int argc, char *argv[])
 {
@@ -15,13 +15,13 @@ int main(int argc, char *argv[])
   auto host = std::string(argv[1]);
   auto port = std::stoi(argv[2]);
 
-  /* Test_FTP(host, port); */
-  Test_WSS(host, port);
+  /* test_ftp_client(host, port); */
+  test_ws_server(host, port);
 
   return 0;
 }
 
-void Test_FTP(std::string& host, int port)
+void test_ftp_client(std::string& host, int port)
 {
   /**
    * Create an FTP object.
@@ -109,9 +109,20 @@ void Test_FTP(std::string& host, int port)
   getchar();  
 }
 
-void Test_WSS(std::string& host, int port)
+void test_ws_server(std::string& host, int port)
 {
-  auto ws = NPL::make_websocket(host, port, TLS::YES);
+  auto ws = NPL::make_ws_server(
+    host, port, TLS::YES, 
+    [] (SPCProtocol c, const std::string& m) 
+    {
+      std::cout << "client : " << m << "\n";
+
+      c->SendProtocolMessage(
+        (uint8_t *)"Hello from server", 
+        strlen("Hello from server")
+      );
+    }
+  );
 
   ws->StartServer();
 

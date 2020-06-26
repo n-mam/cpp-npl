@@ -609,13 +609,11 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       if (status)
       {
-        NotifyState("PASS", 'S');
         iCmdInProgress.clear();
         ProcessNextCmd();
       }
       else
       {
-        NotifyState("PASS", 'F');
         iCmdQ.clear();
         iCmdInProgress.clear();
       }      

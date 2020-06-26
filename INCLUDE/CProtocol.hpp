@@ -8,12 +8,17 @@
 
 NS_NPL
 
-using TProtocolEventCbk = std::function<void (const std::string&, char)>;
-
 template <typename T1 = uint8_t, typename T2 = uint8_t>
 class CProtocol : public CSubject<T1, T2>
 {
   public:
+
+    using SPCProtocol = std::shared_ptr<CProtocol<uint8_t, uint8_t>>;
+
+    using TOnClientMessageCbk = 
+      std::function<
+        void (SPCProtocol, const std::string&)
+      >;
 
     CProtocol() = default;
 
@@ -54,27 +59,30 @@ class CProtocol : public CSubject<T1, T2>
       return iMessages.size();
     }
 
-    virtual void SetStateChangeCallback(TProtocolEventCbk evtcbk)
-    {
-      iEventCallback = evtcbk;
-    }
-
     virtual void SetCredentials(const std::string& user, const std::string& pass)
     {
       iUserName = user;
       iPassword = pass;
     }
 
+    virtual void SetClientCallback(TOnClientMessageCbk cbk)
+    {
+      assert(iClientMessageCallback ==nullptr);
+      iClientMessageCallback = cbk;
+    }
+
+    virtual void SendProtocolMessage(const uint8_t *message, size_t len)
+    {
+    }
+
     virtual void OnConnect(void) override
     {
       iProtocolState = "CONNECTED";
-      NotifyState("CONNECTED", 'S');
     }
 
     virtual void OnDisconnect(void) override
     {
       iProtocolState = "DISCONNECTED";
-      NotifyState("DISCONNECTED", 'S');
     }
 
     virtual void OnRead(const T1 *b, size_t n) override
@@ -94,7 +102,7 @@ class CProtocol : public CSubject<T1, T2>
         }
       }
     }
-  
+
     virtual TLS GetChannelTLS(SPCSubject channel)
     {
       auto sock =  std::dynamic_pointer_cast<CDeviceSocket>(channel);
@@ -113,14 +121,6 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void StateMachine(const std::vector<T1>& buffer)
     {
-    }
-
-    virtual void NotifyState(const std::string& command, char result)
-    {
-      if (iEventCallback)
-      {
-        iEventCallback(command, result);
-      }
     }
 
     virtual SPCDeviceSocket GetTargetSocketDevice(void)
@@ -145,13 +145,17 @@ class CProtocol : public CSubject<T1, T2>
 
     std::vector<std::vector<T2>> iMessages;
 
-    TProtocolEventCbk iEventCallback = nullptr;
+    TOnClientMessageCbk iClientMessageCallback = nullptr;
 
     std::string iProtocolState = "CONNECTING";
 };
 
-template <typename T1 = uint8_t, typename T2 = uint8_t>
-using SPCProtocol = std::shared_ptr<CProtocol<T1, T2>>;
+using SPCProtocol = std::shared_ptr<CProtocol<uint8_t, uint8_t>>;
+
+using TOnClientMessageCbk = 
+  std::function<
+    void (SPCProtocol, const std::string&)
+  >;
 
 NS_END
 

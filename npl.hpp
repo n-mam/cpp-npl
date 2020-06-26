@@ -34,7 +34,7 @@ auto make_ftp(const std::string& host, int port, TLS ftps = TLS::NO)
   return ftp;
 }
 
-auto make_websocket(const std::string& host, int port, TLS tls = TLS::NO)
+auto make_ws_server(const std::string& host, int port, TLS tls = TLS::NO, TOnClientMessageCbk cbk = nullptr)
 {
   auto cc = std::make_shared<CDeviceSocket>();
   auto lso = std::make_shared<CProtocolWS>();
@@ -44,6 +44,10 @@ auto make_websocket(const std::string& host, int port, TLS tls = TLS::NO)
   cc->SetName("ws-cc");
 
   cc->SetHostAndPort(host, port);
+
+  lso->SetName("ws-lso");
+
+  lso->SetClientCallback(cbk);
 
   D->AddEventListener(cc)->AddEventListener(lso);
 
