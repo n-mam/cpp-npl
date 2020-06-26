@@ -12,9 +12,29 @@ class CMessage
 {
   public:
   
+    CMessage(const uint8_t *b, size_t l)
+    {
+      iMessage = std::string((char *)b, l);
+    }
+
     CMessage(const std::vector<uint8_t>& m)
     {
       iMessage = std::string((char *) m.data(), m.size());
+    }
+
+    virtual std::string GetPayloadString(void)
+    {
+      return iMessage;
+    }
+
+    virtual const char * GetPayloadBuffer(void)
+    {
+      return iMessage.c_str();
+    }
+
+    virtual size_t GetPayloadLength(void)
+    {
+      return iMessage.size();
     }
 
   protected:
@@ -24,6 +44,15 @@ class CMessage
     virtual void ParseMessage(void) { }
 };
 
+class CFTPMessage : public CMessage
+{
+  public:
+
+    CFTPMessage(const std::vector<uint8_t>& m) : CMessage(m)
+    {
+    }  
+};
+
 class CHTTPMessage : public CMessage
 {
   public:
@@ -31,6 +60,34 @@ class CHTTPMessage : public CMessage
     CHTTPMessage(const std::vector<uint8_t>& m) : CMessage(m)
     {
       ParseMessage();
+    }
+
+    virtual const char * GetPayload(void)
+    {
+      char *payload = nullptr;
+
+      if (GetHeader("Content-Length").size())
+      {
+        return iMessage.c_str() + 
+               iMessage.find("\r\n\r\n") + 
+               strlen("\r\n\r\n");
+      }
+
+      return payload;
+    }
+
+    virtual size_t GetPayloadLength(void)
+    {
+      size_t fRet = 0;
+
+      auto cl = GetHeader("Content-Length");
+
+      if (cl.size())
+      {
+        return std::stoi(cl);
+      }
+
+      return fRet;
     }
 
     virtual std::string GetHeader(const std::string& key)
@@ -76,7 +133,11 @@ class CHTTPMessage : public CMessage
 class CWSMessage : public CMessage
 {
   public:
-    
+
+    CWSMessage(const uint8_t *b, size_t l) : CMessage(b, l)
+    {
+      ParseMessage();
+    }
     
   protected:
 

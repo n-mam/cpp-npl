@@ -212,11 +212,14 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       { "GEN"       , '5', "READY"     , [this] () { ProcessGenCmdEvent();  }           }
     };
 
-    virtual void StateMachine(const std::vector<uint8_t>& msg) override
+    virtual void StateMachine(SPCMessage msg) override
     {
-      for (size_t i = 0; i < msg.size(); i++)
+      auto l = msg->GetPayloadLength();
+      auto b = msg->GetPayloadBuffer();
+
+      for (size_t i = 0; i < l; i++)
       {
-        std::cout << msg[i];
+        std::cout << b[i];
       }
 
       std::cout << "\n";
@@ -225,7 +228,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         Transition t = FSM[i];
 
-        if ((iProtocolState == t.iTransitionState) && (t.iResponseCode == msg[0]))
+        if ((iProtocolState == t.iTransitionState) && (t.iResponseCode ==  b[0]))
         {
           iProtocolState = t.iNextState;
 
@@ -239,7 +242,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       }      
     }
 
-    virtual bool IsMessageComplete(const std::vector<uint8_t>& b) override
+    virtual SPCMessage IsMessageComplete(const std::vector<uint8_t>& b) override
     {
       size_t l = b.size();
 
@@ -255,12 +258,13 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           {
             if (0 == memcmp(b.data() + i, code, 4))
             {
-              return true;
+              return std::make_shared<CFTPMessage>(b);
             }
           }
         }
       }
-      return false;
+
+      return nullptr;
     }
 
     virtual void SendCommand(const std::string& c, const std::string& arg = "")
@@ -354,8 +358,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       if (rcbk)
       {
         auto& m = iMessages.back();
-        std::string res(m.begin(), m.end());
-        rcbk(res);
+        rcbk(m->GetPayloadString());
       }
 
       SkipCommand(1);
@@ -365,7 +368,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       auto& m = iMessages.back();
 
-      std::string pasv(m.begin(), m.end());
+      auto& pasv = m->GetPayloadString();
 
       auto spec = pasv.substr(pasv.find('('));
 

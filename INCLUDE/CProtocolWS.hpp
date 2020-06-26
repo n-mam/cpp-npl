@@ -56,7 +56,7 @@ class CProtocolWS : public CProtocolHTTP
 
     bool iWsHandshakeDone = false;
 
-    virtual void StateMachine(const std::vector<uint8_t>& m) override
+    virtual void StateMachine(SPCMessage m) override
     {
       if (!iWsHandshakeDone)
       {
@@ -88,33 +88,28 @@ class CProtocolWS : public CProtocolHTTP
         if (iClientMessageCallback)
         {
           iClientMessageCallback(
-            std::dynamic_pointer_cast<CProtocol>(
-              shared_from_this()),
-            std::string((char *)m.data(), m.size())
+            std::dynamic_pointer_cast<CProtocol>(shared_from_this()),
+            m->GetPayloadString()
           );
         }
       }
     }
 
-    virtual bool IsMessageComplete(const std::vector<uint8_t>& b) override
+    virtual SPCMessage IsMessageComplete(const std::vector<uint8_t>& b) override
     {
-      bool fRet = false;
-
       if (iWsHandshakeDone)
       {
-        fRet = IsMessageComplete(b.data(), b.size());
+        return IsMessageComplete(b.data(), b.size());
       }
       else
       {
-        fRet = CProtocolHTTP::IsMessageComplete(b);
+        return CProtocolHTTP::IsMessageComplete(b);
       }
-
-      return fRet;
     }
 
-    virtual bool IsMessageComplete(const uint8_t *b, size_t l)
+    virtual SPCMessage IsMessageComplete(const uint8_t *b, size_t l)
     {
-      bool fRet = false;
+      SPCMessage fRet = nullptr;
 
       if (l < 2) return fRet;
 
@@ -182,18 +177,18 @@ class CProtocolWS : public CProtocolHTTP
           payload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
         }
 
-        fRet = true;
+        fRet = std::make_shared<CWSMessage>(b, l);
       }
 
       return fRet;
     }
 
-    virtual bool ValidateClientHello(const std::vector<uint8_t>& m)
+    virtual bool ValidateClientHello(SPCMessage m)
     {
       return true; //todo
     }
 
-    virtual bool ValidateServerHello(const std::vector<uint8_t>& m)
+    virtual bool ValidateServerHello(SPCMessage m)
     {
       return true; //todo
     }
@@ -203,11 +198,11 @@ class CProtocolWS : public CProtocolHTTP
       return false; //todo
     }
 
-    virtual bool SendServerHello(const std::vector<uint8_t>& m)
+    virtual bool SendServerHello(SPCMessage m)
     {
-      CHTTPMessage cHello(m);
+      auto cHello = std::dynamic_pointer_cast<CHTTPMessage>(m);
 
-      auto key = cHello.GetHeader("Sec-WebSocket-Key");
+      auto key = cHello->GetHeader("Sec-WebSocket-Key");
 
       assert(key.size());
 

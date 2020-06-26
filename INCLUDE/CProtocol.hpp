@@ -94,8 +94,8 @@ class CProtocol : public CSubject<T1, T2>
 
         if (message)
         {
-          iMessages.push_back(iBuffer);
-          StateMachine(iBuffer);
+          iMessages.push_back(message);
+          StateMachine(message);
           CSubject<T1, T2>::OnRead(
             iBuffer.data(),
             iBuffer.size());
@@ -118,9 +118,9 @@ class CProtocol : public CSubject<T1, T2>
 
   protected:
 
-    virtual bool IsMessageComplete(const std::vector<T1>& b) = 0;
+    virtual SPCMessage IsMessageComplete(const std::vector<T1>& b) = 0;
 
-    virtual void StateMachine(const std::vector<T1>& buffer)
+    virtual void StateMachine(SPCMessage message)
     {
     }
 
@@ -130,9 +130,7 @@ class CProtocol : public CSubject<T1, T2>
 
       if (target)
       {
-        auto sock = std::dynamic_pointer_cast<CDeviceSocket>(target);
-
-        return sock;
+        return std::dynamic_pointer_cast<CDeviceSocket>(target);
       }
 
       return nullptr;
@@ -144,7 +142,7 @@ class CProtocol : public CSubject<T1, T2>
 
     std::vector<T1> iBuffer;
 
-    std::vector<std::vector<T2>> iMessages;
+    std::vector<SPCMessage> iMessages;
 
     TOnClientMessageCbk iClientMessageCallback = nullptr;
 

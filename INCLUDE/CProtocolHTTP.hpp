@@ -11,7 +11,7 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 
   protected:
 
-    virtual bool IsMessageComplete(const std::vector<uint8_t>& b) override
+    virtual SPCMessage IsMessageComplete(const std::vector<uint8_t>& b) override
     {
       bool firstLineReceived = false;
       bool headersReceived = false;
@@ -22,42 +22,47 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 
       if (m.find("\r\n") != std::string::npos)
       {
-         firstLineReceived = true;
+        firstLineReceived = true;
 
-         size_t endofHeaders = m.find("\r\n\r\n");
+        size_t endofHeaders = m.find("\r\n\r\n");
 
-         if (endofHeaders != std::string::npos)
-         {
-           headersReceived = true;
+        if (endofHeaders != std::string::npos)
+        {
+          headersReceived = true;
 
-           size_t pos = m.find("Content-Length");
+          size_t pos = m.find("Content-Length");
 
-           if (pos != std::string::npos)
-           {
-             pos += strlen("Content-Length: ");
+          if (pos != std::string::npos)
+          {
+            pos += strlen("Content-Length: ");
 
-             bodyLength = std::stoi(
-                std::string(
-                  m, 
-                  pos, 
-                  m.find("\r\n", pos) - pos - 1));
+            bodyLength = std::stoi(
+              std::string(
+                m, 
+                pos, 
+                m.find("\r\n", pos) - pos - 1));
 
-             if (bodyLength)
-             {
-               size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
+            if (bodyLength)
+            {
+              size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
 
-               if (m.size() == total)
-               {
-                 bodyReceived = true;
-               }
-             }
-           }
-         }
+              if (m.size() == total)
+              {
+                bodyReceived = true;
+              }
+            }
+          }
+        }
       }
 
-      return firstLineReceived && 
-             headersReceived && 
-             (bodyLength ? bodyReceived : true);
+      if (firstLineReceived && 
+          headersReceived && 
+          (bodyLength ? bodyReceived : true))
+      {
+        return std::make_shared<CHTTPMessage>(b);
+      }
+      
+      return nullptr;
     }
 
 };
