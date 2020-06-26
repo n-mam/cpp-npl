@@ -12,6 +12,11 @@ class CMessage
 {
   public:
   
+    CMessage(const std::string& m)
+    {
+      iMessage = m;
+    }
+
     CMessage(const uint8_t *b, size_t l)
     {
       iMessage = std::string((char *)b, l);
@@ -22,7 +27,12 @@ class CMessage
       iMessage = std::string((char *) m.data(), m.size());
     }
 
-    virtual std::string GetPayloadString(void)
+    virtual size_t GetPayloadLength(void)
+    {
+      return iMessage.size();
+    }
+
+    virtual const std::string& GetPayloadString(void)
     {
       return iMessage;
     }
@@ -30,11 +40,6 @@ class CMessage
     virtual const char * GetPayloadBuffer(void)
     {
       return iMessage.c_str();
-    }
-
-    virtual size_t GetPayloadLength(void)
-    {
-      return iMessage.size();
     }
 
   protected:
@@ -62,34 +67,6 @@ class CHTTPMessage : public CMessage
       ParseMessage();
     }
 
-    virtual const char * GetPayload(void)
-    {
-      char *payload = nullptr;
-
-      if (GetHeader("Content-Length").size())
-      {
-        return iMessage.c_str() + 
-               iMessage.find("\r\n\r\n") + 
-               strlen("\r\n\r\n");
-      }
-
-      return payload;
-    }
-
-    virtual size_t GetPayloadLength(void)
-    {
-      size_t fRet = 0;
-
-      auto cl = GetHeader("Content-Length");
-
-      if (cl.size())
-      {
-        return std::stoi(cl);
-      }
-
-      return fRet;
-    }
-
     virtual std::string GetHeader(const std::string& key)
     {
       return iHeaders[key];
@@ -98,6 +75,37 @@ class CHTTPMessage : public CMessage
     virtual void SetHeader(const std::string& key, const std::string& value)
     {
       iHeaders[key] = value;
+    }
+
+    virtual size_t GetPayloadLength(void) override
+    {
+      auto h = GetHeader("Content-Length");
+
+      if (h.size())
+      {
+        return std::stoi(h);
+      }
+
+      return 0;
+    }
+
+    virtual const std::string& GetPayloadString(void)
+    {
+      //do not use
+      assert(false); 
+      return "";
+    }    
+
+    virtual const char * GetPayloadBuffer(void) override
+    {
+      if (GetHeader("Content-Length").size())
+      {
+        return iMessage.c_str() + 
+               iMessage.find("\r\n\r\n") + 
+               strlen("\r\n\r\n");
+      }
+
+      return nullptr;
     }
 
   protected:
@@ -134,11 +142,11 @@ class CWSMessage : public CMessage
 {
   public:
 
-    CWSMessage(const uint8_t *b, size_t l) : CMessage(b, l)
+    CWSMessage(const std::string& m) : CMessage(m)
     {
       ParseMessage();
     }
-    
+
   protected:
 
     virtual void ParseMessage() override

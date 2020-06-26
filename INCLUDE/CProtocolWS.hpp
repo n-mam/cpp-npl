@@ -153,7 +153,7 @@ class CProtocolWS : public CProtocolHTTP
       }
       else
       {
-        assert(false);
+        return fRet;
       }
 
       unsigned char maskingKey[4];
@@ -177,7 +177,7 @@ class CProtocolWS : public CProtocolHTTP
           payload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
         }
 
-        fRet = std::make_shared<CWSMessage>(b, l);
+        fRet = std::make_shared<CWSMessage>(payload); //fixme
       }
 
       return fRet;
