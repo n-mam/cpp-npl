@@ -7,9 +7,9 @@ C++17 network protocol library
 - Asynchronous
 - Supported protocols
   * FTP
-  * FTPS (WIP)
+  * FTPS
+  * Websockets
   * SSH (WIP)
-  * Websockets (WIP)
 
 Build
 
