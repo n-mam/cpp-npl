@@ -16,11 +16,11 @@
             "externalConsole": true
         },
         {
-            "name": "(Windows) Websocket test",
+            "name": "(Windows) Agent test",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/Test.exe",
-            "args": ["0.0.0.0", "8080"],
+            "args": ["0.0.0.0", "8081"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
