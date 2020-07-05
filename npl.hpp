@@ -15,7 +15,7 @@ auto make_dispatcher(void)
 }
 
 auto D = make_dispatcher();
-  
+
 auto make_ftp(const std::string& host, int port, TLS ftps = TLS::NO)
 {
   auto cc = std::make_shared<CDeviceSocket>();

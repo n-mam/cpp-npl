@@ -1,19 +1,8 @@
 #include <iostream>
 #include <npl.hpp>
 
-int main(int argc, char *argv[])
+void test_ws_server(const std::string& host, int port)
 {
-  if (argc != 3)
-  {
-    std::cout << "usage : Agent <host> <port>\n";
-    std::cout << "usage : Agent 0.0.0.0 8081\n";
-    return 0;
-  }
-
-  auto host = std::string(argv[1]);
-
-  auto port = std::stoi(argv[2]);
-
   auto ws = NPL::make_ws_server(
     host, port, TLS::YES, 
     [] (SPCProtocol c, const std::string& m) 
@@ -21,8 +10,8 @@ int main(int argc, char *argv[])
       std::cout << "client : " << m << "\n";
 
       c->SendProtocolMessage(
-        (uint8_t *)"Hello from server", 
-        strlen("Hello from server")
+        (uint8_t *)"server echo : hello", 
+        strlen("server echo : hello")
       );
     }
   );
@@ -30,11 +19,9 @@ int main(int argc, char *argv[])
   ws->StartServer();
 
   getchar();
-
-  return 0;
 }
 
-void test_ftp_client(std::string& host, int port)
+void test_ftp_client(const std::string& host, int port)
 {
   /**
    * Create an FTP object.
@@ -120,4 +107,23 @@ void test_ftp_client(std::string& host, int port)
   ftp->Quit();
 
   getchar();  
+}
+
+int main(int argc, char *argv[])
+{
+  if (argc != 3)
+  {
+    std::cout << "usage : Agent <host> <port>\n";
+    std::cout << "usage : Agent 0.0.0.0 8081\n";
+    return 0;
+  }
+
+  auto host = std::string(argv[1]);
+
+  auto port = std::stoi(argv[2]);
+
+  test_ftp_client(host, port);
+  test_ws_server(host, port);
+
+  return 0;
 }
