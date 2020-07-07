@@ -1,6 +1,12 @@
+#ifndef JSON_HPP
+#define JSON_HPP
+
 #include <map>
 #include <string>
 #include <vector>
+#include <sstream>
+
+#include <String.hpp>
 
 class Json
 {
@@ -11,9 +17,9 @@ class Json
 
     }
 
-    Json(const std::string&)
+    Json(const std::string& s)
     {
-      iString = s;
+      iJsonString = s;
       Parse();
     }
 
@@ -25,6 +31,20 @@ class Json
     bool IsOk()
     {
 
+    }
+
+    bool HasKey(const std::string& key)
+    {
+      auto fRet = iMap.find(key);
+
+      if (fRet != iMap.end())
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
     }
 
     std::string Stringify(void)
@@ -74,14 +94,35 @@ class Json
       return value;
     }
 
+    std::string GetKey(const std::string& key)
+    {
+      return iMap[key];
+    }
+  
     void SetKey(const std::string& key, const std::string& value)
     {
       iMap[key] = value;
     }
-    
+    /*
+     * This assumes that the json has been stringifie'd and has only 
+     * string kv pairs, otherwise this would fail miserably
+     * {"service":"ftp","request":"connect","list":"/","id":"0","host":"w","port":"w","user":"w","pass":"w"}
+     */
     void Parse(void)
     {
+      ltrim(iJsonString, "{\"");
+      rtrim(iJsonString, "\"}");
 
+      auto pp = split(iJsonString, "\",\"");
+
+      for (auto& p : pp)
+      {
+        auto kv = split(p, "\":\"");
+
+        iMap.insert(
+          std::make_pair(kv[0], kv[1])
+        );
+      }
     }
     
     void Dump(void)
@@ -96,3 +137,5 @@ class Json
     std::map<std::string, std::string> iMap;
 
 };
+
+#endif //

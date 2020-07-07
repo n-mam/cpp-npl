@@ -2,6 +2,7 @@
 #include <CDeviceSocket.hpp>
 #include <CProtocolFTP.hpp>
 #include <CProtocolWS.hpp>
+#include <Json.hpp>
 
 NS_NPL
 
