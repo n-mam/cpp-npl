@@ -1,7 +1,6 @@
 #ifndef PROTOCOLWS_HPP
 #define PROTOCOLWS_HPP
 
-#include <Util.hpp>
 #include <CMessage.hpp>
 #include <Encryption.hpp>
 #include <CProtocolHTTP.hpp>
@@ -88,7 +87,9 @@ class CProtocolWS : public CProtocolHTTP
         if (iClientMessageCallback)
         {
           iClientMessageCallback(
-            std::dynamic_pointer_cast<CProtocol>(shared_from_this()),
+            std::dynamic_pointer_cast<CProtocol>(
+              shared_from_this()
+            ),
             m->GetPayloadString()
           );
         }
@@ -109,78 +110,16 @@ class CProtocolWS : public CProtocolHTTP
 
     virtual SPCMessage IsMessageComplete(const uint8_t *b, size_t l)
     {
-      SPCMessage fRet = nullptr;
+      if (l < 2) return nullptr;
 
-      if (l < 2) return fRet;
+      auto m = std::make_shared<CWSMessage>(b, l);
 
-      uint8_t opcode = b[0] & 0x0F;
-
-      bool bMasked = false;
-
-      if (b[1] & 0x80)
+      if (m->GetPayloadLength())
       {
-        bMasked = true;
+        return m;
       }
 
-      size_t payloadLength = 0;
-      size_t maskingKeyIndex = 0;
-
-      unsigned char indicator = b[1] & 0x7F;
-
-      if (indicator <= 125)
-      { /*
-         * if 0-125, that is the payload length
-         */
-        payloadLength = indicator;
-        maskingKeyIndex = 2; /** third byte */
-      }
-      else if (indicator == 126 && l >= (2 + 2))
-      { /*
-         * If 126, the following 2 bytes interpreted as a 
-         * 16-bit unsigned integer are the payload length
-         */
-        payloadLength = BTOL(b + 2, 2);
-        maskingKeyIndex = 4;
-      }
-      else if (indicator == 127 && l >= (2 + 8))
-      { /*
-         * If 127, the following 8 bytes interpreted as a 
-         * 64-bit unsigned integer (the most significant bit 
-         * MUST be 0) are the payload length
-         */
-        payloadLength = BTOL(b + 2, 8);
-        maskingKeyIndex = 10;
-      }
-      else
-      {
-        return fRet;
-      }
-
-      unsigned char maskingKey[4];
-
-      if (bMasked && (l >= (maskingKeyIndex + 4)))
-      {
-        for (int i = 0; i < 4; i++)
-        {
-          maskingKey[i] = b[maskingKeyIndex + i];
-        }
-      }
-
-      std::string payload;
-
-      size_t payloadIndex = maskingKeyIndex + (bMasked ? 4 : 0);
-
-      if ((payloadIndex + payloadLength) == l)
-      {
-        for (int i = 0; i < payloadLength; i++)
-        {
-          payload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
-        }
-
-        fRet = std::make_shared<CWSMessage>(payload); //fixme
-      }
-
-      return fRet;
+      return nullptr;
     }
 
     virtual bool ValidateClientHello(SPCMessage m)

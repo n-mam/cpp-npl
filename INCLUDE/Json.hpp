@@ -119,9 +119,12 @@ class Json
       {
         auto kv = split(p, "\":\"");
 
-        iMap.insert(
-          std::make_pair(kv[0], kv[1])
-        );
+        if (kv.size() == 2)
+        {
+          iMap.insert(
+            std::make_pair(kv[0], kv[1])
+          );
+        }
       }
     }
     
