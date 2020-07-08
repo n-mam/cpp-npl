@@ -179,7 +179,7 @@ class CWSMessage : public CMessage
       }
       else
       {
-        assert(false);
+        return;
       }
 
       unsigned char maskingKey[4];

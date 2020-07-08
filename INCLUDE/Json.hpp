@@ -25,12 +25,20 @@ class Json
 
     ~Json()
     {
-
     }
 
     bool IsOk()
     {
+    }
 
+    std::string GetKey(const std::string& key)
+    {
+      return iMap[key];
+    }
+  
+    void SetKey(const std::string& key, const std::string& value)
+    {
+      iMap[key] = value;
     }
 
     bool HasKey(const std::string& key)
@@ -94,15 +102,6 @@ class Json
       return value;
     }
 
-    std::string GetKey(const std::string& key)
-    {
-      return iMap[key];
-    }
-  
-    void SetKey(const std::string& key, const std::string& value)
-    {
-      iMap[key] = value;
-    }
     /*
      * This assumes that the json has been stringifie'd and has only 
      * string kv pairs, otherwise this would fail miserably
@@ -141,4 +140,4 @@ class Json
 
 };
 
-#endif //
+#endif //JSON_HPP
