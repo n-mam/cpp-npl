@@ -2,7 +2,7 @@
 #include <npl.hpp>
 
 void test_ws_server(const std::string& host, int port)
-{
+{ 
   auto ws = NPL::make_ws_server(
     host, port, TLS::YES, 
     [] (SPCProtocol c, const std::string& m) 
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 
   auto port = std::stoi(argv[2]);
 
-  test_ftp_client(host, port);
+  //test_ftp_client(host, port);
   test_ws_server(host, port);
 
   return 0;

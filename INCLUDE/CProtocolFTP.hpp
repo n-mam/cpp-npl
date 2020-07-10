@@ -36,92 +36,108 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
     virtual void Upload(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, DCProt P = DCProt::Clear)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      if (!fRemote.size() || !fLocal.size()) assert(false);
+        if (!fRemote.size() || !fLocal.size()) assert(false);
 
-      SetDCProtLevel(P);
+        SetDCProtLevel(P);
 
-      iCmdQ.emplace_back("PASV", "", "", nullptr, nullptr);
+        iCmdQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
-      iCmdQ.emplace_back("STOR", fRemote, fLocal, nullptr, cbk);
+        iCmdQ.emplace_back("STOR", fRemote, fLocal, nullptr, cbk);
+      }
 
       ProcessNextCmd();
     }
 
     virtual void Download(TTransferCbk cbk, const std::string& fRemote, const std::string& fLocal, DCProt P = DCProt::Clear)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      if (!fRemote.size() || (!cbk && !fLocal.size())) assert(false);
+        if (!fRemote.size() || (!cbk && !fLocal.size())) assert(false);
 
-      SetDCProtLevel(P);
+        SetDCProtLevel(P);
 
-      iCmdQ.emplace_back("PASV", "", "", nullptr, nullptr);
+        iCmdQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
-      iCmdQ.emplace_back("RETR", fRemote, fLocal, nullptr, cbk);
+        iCmdQ.emplace_back("RETR", fRemote, fLocal, nullptr, cbk);
+      }
 
       ProcessNextCmd();
     }
 
     virtual void ListDirectory(TTransferCbk cbk, const std::string& fRemote = "", DCProt P = DCProt::Clear)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      if (!cbk) assert(false);
+        if (!cbk) assert(false);
 
-      SetDCProtLevel(P);
+        SetDCProtLevel(P);
 
-      iCmdQ.emplace_back("TYPE", "I", "", nullptr, nullptr);
+        iCmdQ.emplace_back("TYPE", "I", "", nullptr, nullptr);
 
-      iCmdQ.emplace_back("PASV", "", "", nullptr, nullptr);
+        iCmdQ.emplace_back("PASV", "", "", nullptr, nullptr);
 
-      iCmdQ.emplace_back("LIST", fRemote, "", nullptr, cbk);
+        iCmdQ.emplace_back("LIST", fRemote, "", nullptr, cbk);
+      }
 
       ProcessNextCmd();        
     }
 
     virtual void GetCurrentDir(TResponseCbk cbk = nullptr)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      iCmdQ.emplace_back("PWD", "", "", cbk, nullptr);
+        iCmdQ.emplace_back("PWD", "", "", cbk, nullptr);
+      }
 
       ProcessNextCmd();
     }
 
     virtual void SetCurrentDir(const std::string& dir, TResponseCbk cbk = nullptr)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      iCmdQ.emplace_back("CWD", dir, "", cbk, nullptr);
+        iCmdQ.emplace_back("CWD", dir, "", cbk, nullptr);
+      }
 
       ProcessNextCmd();       
     }
 
     virtual void CreateDir(const std::string& dir, TResponseCbk cbk)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      iCmdQ.emplace_back("MKD", dir, "", cbk, nullptr);
+        iCmdQ.emplace_back("MKD", dir, "", cbk, nullptr);
+      }
 
       ProcessNextCmd();    
     }
 
     virtual void RemoveDir(const std::string& dir, TResponseCbk cbk)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      iCmdQ.emplace_back("RMD", dir, "", cbk, nullptr);
+        iCmdQ.emplace_back("RMD", dir, "", cbk, nullptr);
+      }
 
       ProcessNextCmd();  
     }
 
     virtual void Quit(TResponseCbk cbk = nullptr)
     {
-      std::lock_guard<std::mutex> lg(iLock);
+      {
+        std::lock_guard<std::mutex> lg(iLock);
 
-      iCmdQ.emplace_back("QUIT", "", "", cbk, nullptr);
+        iCmdQ.emplace_back("QUIT", "", "", cbk, nullptr);
+      }
 
       ProcessNextCmd();       
     }

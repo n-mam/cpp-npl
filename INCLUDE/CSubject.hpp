@@ -151,6 +151,16 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     {
       return false;
     }
+    
+    virtual void SetID(size_t id)
+    {
+      iID = id;
+    }
+
+    virtual size_t GetID(void)
+    {
+      return iID;
+    }
 
     virtual std::string GetName(void)
     {
@@ -189,6 +199,8 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     }
     
   protected:
+
+    size_t iID = -1;
 
     std::mutex iLock;
 
