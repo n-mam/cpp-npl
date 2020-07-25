@@ -1,5 +1,5 @@
-#ifndef COMPONENT_HPP
-#define COMPONENT_HPP
+#ifndef SUBJECT_HPP
+#define SUBJECT_HPP
 
 #define NS_NPL namespace NPL {
 #define NS_END }
