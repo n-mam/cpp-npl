@@ -49,7 +49,7 @@ class CDeviceSocket : public CDevice
 
     ~CDeviceSocket()
     {
-      std::cout << "~" << iName << " ->\n";
+      std::cout << "~CDeviceSocket : " << iName << " ->\n";
       StopSocket();
       shutdown((SOCKET)iFD, 0); //sd_recv
       closesocket((SOCKET)iFD);

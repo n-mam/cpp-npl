@@ -1,6 +1,45 @@
 #include <iostream>
 #include <npl.hpp>
 
+void test_ws_server(const std::string& host, int port);
+void test_ftp_client(const std::string& host, int port);
+void test_http_client(const std::string& host, int port);
+
+int main(int argc, char *argv[])
+{
+  if (argc != 3)
+  {
+    std::cout << "usage : Agent <host> <port>\n";
+    std::cout << "usage : Agent 0.0.0.0 8081\n";
+    return 0;
+  }
+
+  auto host = std::string(argv[1]);
+  auto port = std::stoi(argv[2]);
+
+  //test_ftp_client(host, port);
+  //test_ws_server(host, port);
+  test_http_client(host, port);
+
+  return 0;
+}
+
+void test_http_client(const std::string& host, int port)
+{
+  auto http = NPL::make_http_client(host, port);
+
+  http->StartClient(
+    [&]()
+    {
+      Json j;
+      j.SetKey("api", "TRAIL");
+      http->Post("/api", j.Stringify());
+    }
+  );
+
+  getchar();
+}
+
 void test_ws_server(const std::string& host, int port)
 { 
   auto ws = NPL::make_ws_server(
@@ -107,23 +146,4 @@ void test_ftp_client(const std::string& host, int port)
   ftp->Quit();
 
   getchar();  
-}
-
-int main(int argc, char *argv[])
-{
-  if (argc != 3)
-  {
-    std::cout << "usage : Agent <host> <port>\n";
-    std::cout << "usage : Agent 0.0.0.0 8081\n";
-    return 0;
-  }
-
-  auto host = std::string(argv[1]);
-
-  auto port = std::stoi(argv[2]);
-
-  //test_ftp_client(host, port);
-  test_ws_server(host, port);
-
-  return 0;
 }

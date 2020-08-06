@@ -55,6 +55,22 @@ auto make_ws_server(const std::string& host, int port, TLS tls = TLS::NO, TOnCli
   return lso;
 }
 
+auto make_http_client(const std::string& host, int port)
+{
+  auto sock = std::make_shared<CDeviceSocket>();
+  auto http = std::make_shared<CProtocolHTTP>();    
+
+  sock->SetHostAndPort(host, port);
+
+  sock->SetName("http-cc");
+
+  http->SetName("http");
+
+  D->AddEventListener(sock)->AddEventListener(http);
+
+  return http;
+}
+
 NS_END
 
 void TEST_DISPATCHER()

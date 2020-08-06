@@ -28,7 +28,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     {
       std::lock_guard<std::mutex> lg(iLock);
       RemoveAllEventListenersInternal();
-      std::cout << "~" + iName + "\n";
+      std::cout << "~CSubject : " + iName + "\n";
     }
 
     virtual void SetTarget(const WPCSubject& target)

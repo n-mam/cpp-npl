@@ -9,8 +9,27 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 {
   public:
 
+    void Post(const std::string& url, const std::string& body)
+    {
+      std::stringstream req;
+
+      req << "POST " << url << " HTTP/1.1\r\n";
+      req << "Host: 127.0.0.1\r\n";
+      req << "Content-type: text/plain\r\n";
+      req << "Content-length: " << body.size() << "\r\n";      
+      req << "\r\n";
+      req << body;
+
+      Write((uint8_t *) req.str().c_str(), req.str().size(), 0);
+    }
+
   protected:
 
+    virtual void StateMachine(SPCMessage m) override
+    {
+
+    }
+    
     virtual SPCMessage IsMessageComplete(const std::vector<uint8_t>& b) override
     {
       bool firstLineReceived = false;

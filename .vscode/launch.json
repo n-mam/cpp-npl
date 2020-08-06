@@ -16,7 +16,7 @@
             "externalConsole": true
         },
         {
-            "name": "(Windows) Agent test",
+            "name": "Agent",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/Test.exe",
@@ -25,6 +25,17 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true
-        }        
+        },
+        {
+            "name": "HTTP",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/Test.exe",
+            "args": ["127.0.0.1", "8080"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true
+        }           
     ]
 }

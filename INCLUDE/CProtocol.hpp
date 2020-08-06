@@ -15,6 +15,8 @@ class CProtocol : public CSubject<T1, T2>
 
     using SPCProtocol = std::shared_ptr<CProtocol<uint8_t, uint8_t>>;
 
+    using TOnConnectCbk = std::function<void (void)>;
+
     using TOnClientMessageCbk = 
       std::function<
         void (SPCProtocol, const std::string&)
@@ -24,8 +26,10 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual ~CProtocol() {}
 
-    virtual void StartClient(void)
+    virtual void StartClient(TOnConnectCbk cbk = nullptr)
     {
+      iConnectCbk = cbk;
+
       auto sock = GetTargetSocketDevice();
 
       if (sock)
@@ -76,6 +80,10 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void OnConnect(void) override
     {
+      if (iConnectCbk)
+      {
+        iConnectCbk();
+      }
       iProtocolState = "CONNECTED";
     }
 
@@ -145,6 +153,8 @@ class CProtocol : public CSubject<T1, T2>
     std::vector<SPCMessage> iMessages;
 
     TOnClientMessageCbk iClientMessageCallback = nullptr;
+
+    TOnConnectCbk iConnectCbk = nullptr;
 
     std::string iProtocolState = "CONNECTING";
 };
