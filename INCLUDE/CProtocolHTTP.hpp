@@ -86,6 +86,8 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 
 };
 
+using SPCProtocolHTTP = std::shared_ptr<CProtocolHTTP>;
+
 NS_END
 
 #endif //PROTOCOLHTTP_HPP

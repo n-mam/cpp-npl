@@ -15,7 +15,7 @@ class CProtocol : public CSubject<T1, T2>
 
     using SPCProtocol = std::shared_ptr<CProtocol<uint8_t, uint8_t>>;
 
-    using TOnConnectCbk = std::function<void (void)>;
+    using TOnConnectCbk = std::function<void (SPCProtocol)>;
 
     using TOnClientMessageCbk = 
       std::function<
@@ -82,8 +82,9 @@ class CProtocol : public CSubject<T1, T2>
     {
       if (iConnectCbk)
       {
-        iConnectCbk();
+        iConnectCbk(std::dynamic_pointer_cast<CProtocol>(shared_from_this()));
       }
+
       iProtocolState = "CONNECTED";
     }
 

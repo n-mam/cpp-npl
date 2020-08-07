@@ -21,23 +21,31 @@ int main(int argc, char *argv[])
   //test_ws_server(host, port);
   test_http_client(host, port);
 
+  getchar();
+
   return 0;
 }
 
 void test_http_client(const std::string& host, int port)
 {
-  auto http = NPL::make_http_client(host, port);
+  {
+    auto http = NPL::make_http_client(host, port);
 
-  http->StartClient(
-    [&]()
-    {
-      Json j;
-      j.SetKey("api", "TRAIL");
-      http->Post("/api", j.Stringify());
-    }
-  );
+    http->StartClient(
+      [](auto p)
+      {
+        Json j;
+        j.SetKey("api", "TRAIL");
 
-  getchar();
+        auto http = std::dynamic_pointer_cast<CProtocolHTTP>(p);
+
+        if (http)
+        {
+          http->Post("/api", j.Stringify());
+        }
+      }
+    );
+  }
 }
 
 void test_ws_server(const std::string& host, int port)

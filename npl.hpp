@@ -62,9 +62,9 @@ auto make_http_client(const std::string& host, int port)
 
   sock->SetHostAndPort(host, port);
 
-  sock->SetName("http-cc");
+  sock->SetName("http-socket");
 
-  http->SetName("http");
+  http->SetName("http-protocol");
 
   D->AddEventListener(sock)->AddEventListener(http);
 
