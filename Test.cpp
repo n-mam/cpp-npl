@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 
 void test_http_client(const std::string& host, int port)
 {
+  for (int i = 0; i < 100; i++)
   {
     auto http = NPL::make_http_client(host, port);
 
@@ -45,6 +46,7 @@ void test_http_client(const std::string& host, int port)
         }
       }
     );
+	Sleep(500);
   }
 }
 
