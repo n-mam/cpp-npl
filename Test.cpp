@@ -1,6 +1,8 @@
 #include <iostream>
 #include <npl.hpp>
 
+using namespace NPL;
+
 void test_ws_server(const std::string& host, int port);
 void test_ftp_client(const std::string& host, int port);
 void test_http_client(const std::string& host, int port);

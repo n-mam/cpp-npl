@@ -71,8 +71,6 @@ auto make_http_client(const std::string& host, int port)
   return http;
 }
 
-NS_END
-
 void TEST_DISPATCHER()
 {
   for (int i = 0; i < 100; i++)
@@ -95,3 +93,5 @@ void TEST_DISPATCHER()
   auto D1 = std::make_unique<CDispatcher>();
   auto D2 = std::make_unique<CDispatcher>();
 }
+
+NS_END

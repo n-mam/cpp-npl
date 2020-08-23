@@ -15,7 +15,7 @@
  #include <string.h>
 #endif
 
-using namespace NPL;
+NS_NPL
 
 class CDispatcher : public CSubject<uint8_t, uint8_t>
 {
@@ -311,5 +311,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
 using SPCDispatcher = std::shared_ptr<CDispatcher>;
 using UPCDispatcher = std::unique_ptr<CDispatcher>;
+
+NS_END
 
 #endif //DISPATCHER_HPP;
