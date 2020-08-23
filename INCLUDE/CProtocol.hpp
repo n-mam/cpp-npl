@@ -113,7 +113,7 @@ class CProtocol : public CSubject<T1, T2>
       }
     }
 
-    virtual TLS GetChannelTLS(SPCSubject<T1, T2> channel)
+    virtual TLS GetChannelTLS(SPCSubject channel)
     {
       auto sock =  std::dynamic_pointer_cast<CDeviceSocket>(channel);
 
