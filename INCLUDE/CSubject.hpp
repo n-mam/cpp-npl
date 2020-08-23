@@ -289,7 +289,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
         observer->OnAccept();
       }
       ProcessMarkRemoveAllListeners();
-    }    
+    }
 };
 
 template <typename T1, typename T2>

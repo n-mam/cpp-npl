@@ -46,7 +46,6 @@ void test_http_client(const std::string& host, int port)
         }
       }
     );
-	Sleep(500);
   }
 }
 

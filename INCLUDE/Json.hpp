@@ -28,7 +28,9 @@ class Json
     }
 
     bool IsOk()
+
     {
+      return false;
     }
 
     std::string GetKey(const std::string& key)

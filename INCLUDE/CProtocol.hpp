@@ -13,7 +13,7 @@ class CProtocol : public CSubject<T1, T2>
 {
   public:
 
-    using SPCProtocol = std::shared_ptr<CProtocol<uint8_t, uint8_t>>;
+    using SPCProtocol = std::shared_ptr<CProtocol<T1, T2>>;
 
     using TOnConnectCbk = std::function<void (SPCProtocol)>;
 
@@ -82,7 +82,7 @@ class CProtocol : public CSubject<T1, T2>
     {
       if (iConnectCbk)
       {
-        iConnectCbk(std::dynamic_pointer_cast<CProtocol>(shared_from_this()));
+        iConnectCbk(std::dynamic_pointer_cast<CProtocol<T1, T2>>(this->shared_from_this()));
       }
 
       iProtocolState = "CONNECTED";
@@ -113,7 +113,7 @@ class CProtocol : public CSubject<T1, T2>
       }
     }
 
-    virtual TLS GetChannelTLS(SPCSubject channel)
+    virtual TLS GetChannelTLS(SPCSubject<T1, T2> channel)
     {
       auto sock =  std::dynamic_pointer_cast<CDeviceSocket>(channel);
 
