@@ -29,7 +29,7 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
     {
       return;
     }
-    
+
     virtual SPCMessage IsMessageComplete(const std::vector<uint8_t>& b) override
     {
       bool firstLineReceived = false;
@@ -80,7 +80,7 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
       {
         return std::make_shared<CHTTPMessage>(b);
       }
-      
+
       return nullptr;
     }
 
