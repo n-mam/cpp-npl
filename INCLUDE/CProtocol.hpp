@@ -17,10 +17,7 @@ class CProtocol : public CSubject<T1, T2>
 
     using TOnConnectCbk = std::function<void (SPCProtocol)>;
 
-    using TOnClientMessageCbk = 
-      std::function<
-        void (SPCProtocol, const std::string&)
-      >;
+    using TOnClientMessageCbk = std::function<void (SPCProtocol, const std::string&)>;
 
     CProtocol() = default;
 
@@ -76,6 +73,7 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual void SendProtocolMessage(const uint8_t *message, size_t len)
     {
+      return;
     }
 
     virtual void OnConnect(void) override
@@ -115,7 +113,7 @@ class CProtocol : public CSubject<T1, T2>
 
     virtual TLS GetChannelTLS(SPCSubject channel)
     {
-      auto sock =  std::dynamic_pointer_cast<CDeviceSocket>(channel);
+      auto sock = std::dynamic_pointer_cast<CDeviceSocket>(channel);
 
       if (sock)
       {
@@ -153,9 +151,9 @@ class CProtocol : public CSubject<T1, T2>
 
     std::vector<SPCMessage> iMessages;
 
-    TOnClientMessageCbk iClientMessageCallback = nullptr;
-
     TOnConnectCbk iConnectCbk = nullptr;
+
+    TOnClientMessageCbk iClientMessageCallback = nullptr;
 
     std::string iProtocolState = "CONNECTING";
 };

@@ -26,9 +26,9 @@ auto make_ftp(const std::string& host, int port, TLS ftps = TLS::NO)
 
   cc->SetTLS(ftps);
 
-  cc->SetName("ftp-cc");
+  cc->SetName("ftp-socket");
 
-  ftp->SetName("ftp");
+  ftp->SetName("ftp-protocol");
 
   D->AddEventListener(cc)->AddEventListener(ftp);
 

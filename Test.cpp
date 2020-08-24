@@ -38,6 +38,7 @@ void test_http_client(const std::string& host, int port)
       [](auto p)
       {
         Json j;
+
         j.SetKey("api", "TRAIL");
 
         auto http = std::dynamic_pointer_cast<CProtocolHTTP>(p);
