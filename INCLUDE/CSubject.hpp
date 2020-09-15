@@ -191,11 +191,13 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     
     virtual void SetProperty(const std::string& key, const std::string& value)
     {
+      std::lock_guard<std::mutex> lg(iLock);
       iPropertyMap[key] = value;
     }
 
     virtual std::string GetProperty(const std::string& key)
     {
+      std::lock_guard<std::mutex> lg(iLock);
       std::string value = "";
 
       try
@@ -211,13 +213,16 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     }
 
     virtual int GetPropertyAsInt(const std::string& key)
-    {     
-      return std::stoi(GetProperty(key));
+    {
+      auto value = GetProperty(key);
+      assert(value.size());
+      return std::stoi(value);
     }
 
     virtual bool GetPropertyAsBool(const std::string& key)
     {
-      return GetProperty(key).size() ? true : false;
+      auto value = GetProperty(key); 
+      return ((value.size() && value == "true") ? true : false);
     }
 
   protected:
