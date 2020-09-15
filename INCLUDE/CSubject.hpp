@@ -4,6 +4,7 @@
 #define NS_NPL namespace NPL {
 #define NS_END }
 
+#include <map>
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -188,6 +189,37 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
        } 
     }
     
+    virtual void SetProperty(const std::string& key, const std::string& value)
+    {
+      iPropertyMap[key] = value;
+    }
+
+    virtual std::string GetProperty(const std::string& key)
+    {
+      std::string value = "";
+
+      try
+      {
+        value = iPropertyMap.at(key);
+      }
+      catch(const std::exception& e)
+      {
+        std::cerr << e.what() << '\n';
+      }
+      
+      return value;
+    }
+
+    virtual int GetPropertyAsInt(const std::string& key)
+    {     
+      return std::stoi(GetProperty(key));
+    }
+
+    virtual bool GetPropertyAsBool(const std::string& key)
+    {
+      return GetProperty(key).size() ? true : false;
+    }
+
   protected:
 
     std::mutex iLock;
@@ -203,6 +235,8 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     bool iMarkRemoveSelfAsListener = false;
 
     std::vector<SPCSubject> iObservers;
+
+    std::map<std::string, std::string> iPropertyMap;
 
     virtual void ResetSubject(SPCSubject& subject)
     {

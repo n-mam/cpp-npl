@@ -2,6 +2,7 @@ project (NPL)
 
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
+#SET OPENSSL_ROOT_DIR=C:/vcpkg/installed/x64-windows
 
 ADD_EXECUTABLE(Test Test.cpp)
 
