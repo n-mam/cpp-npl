@@ -215,7 +215,6 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     virtual int GetPropertyAsInt(const std::string& key)
     {
       auto value = GetProperty(key);
-      assert(value.size());
       return std::stoi(value);
     }
 
