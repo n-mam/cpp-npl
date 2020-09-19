@@ -30,7 +30,7 @@ class CProtocolWS : public CProtocolHTTP
         frameLength += 2;
         LTOB(len, frame + 2, 2);
       }
-      else if (len > 65536)
+      else if (len >= 65536)
       {
         frame[1] = 127;
         frameLength += 8;
@@ -38,7 +38,7 @@ class CProtocolWS : public CProtocolHTTP
       }
       else
       {
-        // what now ?
+        assert(false);
       }
 
       frameLength++;
