@@ -9,6 +9,7 @@
 #include <atomic>
 #include <vector>
 #include <memory>
+#include <string>
 #include <utility>
 #include <algorithm>
 #include <functional>
