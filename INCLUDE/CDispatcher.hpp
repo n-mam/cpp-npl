@@ -251,7 +251,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             #endif
 
-            std::cout << NPL::EIOToChar(ctx->type) << " " << o->GetName() << " : " << (void *)k << ", n " << ctx->n << "\n";            
+            //std::cout << NPL::EIOToChar(ctx->type) << " " << o->GetName() << " : " << (void *)k << ", n " << ctx->n << "\n";            
 
             if (ctx->type == EIOTYPE::READ)
             {
