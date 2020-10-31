@@ -199,6 +199,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     virtual std::string GetProperty(const std::string& key)
     {
       std::lock_guard<std::mutex> lg(iLock);
+
       std::string value = "";
 
       try

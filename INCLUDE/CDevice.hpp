@@ -42,6 +42,7 @@ struct Context
     void          * k;
     const uint8_t * b;
     unsigned long   n;
+    bool            bFree;
 };
 
 constexpr uint32_t DEVICE_BUFFER_SIZE = 256;
@@ -125,10 +126,12 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       if (b)
       {
         ctx->b = b;
+        ctx->bFree = false;
       }
       else
       {
         ctx->b = (uint8_t *) calloc(1, DEVICE_BUFFER_SIZE);
+        ctx->bFree = true;
         l = DEVICE_BUFFER_SIZE;
       }
 

@@ -71,6 +71,13 @@ auto make_http_client(const std::string& host, int port)
   return http;
 }
 
+auto make_file(const std::string& file, bool bCreate = false)
+{
+  auto device = std::make_shared<CDevice>(file, bCreate);
+  D->AddEventListener(device);
+  return device;
+}
+
 void TEST_DISPATCHER()
 {
   for (int i = 0; i < 100; i++)

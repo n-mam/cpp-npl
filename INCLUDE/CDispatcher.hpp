@@ -281,7 +281,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
               assert (false);
             }
 
-            free((void *)ctx->b);
+            if (ctx->bFree) free((void *)ctx->b);
 
             free(ctx);
 

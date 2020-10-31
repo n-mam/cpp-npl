@@ -17,6 +17,8 @@ class CListener : public CSubject<uint8_t, uint8_t>
 {
   public:
 
+    CListener() {}
+
     CListener(
       TListenerOnConnect cbkConnect = nullptr,
       TListenerOnRead cbkRead = nullptr,
@@ -31,7 +33,7 @@ class CListener : public CSubject<uint8_t, uint8_t>
       iCbkAccept = cbkAccept;
     }
 
-    ~CListener(){}
+    virtual ~CListener(){}
 
     virtual void OnRead(const uint8_t *b, size_t n)
     {
@@ -75,11 +77,11 @@ class CListener : public CSubject<uint8_t, uint8_t>
 
   protected:
 
-    TListenerOnRead iCbkRead;
-    TListenerOnWrite iCbkWrite;
-    TListenerOnAccept iCbkAccept;
-    TListenerOnConnect iCbkConnect;
-    TListenerOnDisconnect iCbkDisconnect;
+    TListenerOnRead iCbkRead = nullptr;
+    TListenerOnWrite iCbkWrite = nullptr;
+    TListenerOnAccept iCbkAccept = nullptr;
+    TListenerOnConnect iCbkConnect = nullptr;
+    TListenerOnDisconnect iCbkDisconnect = nullptr;
 };
 
 NS_END
