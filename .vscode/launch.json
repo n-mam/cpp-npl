@@ -36,6 +36,17 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": true
-        }           
+        },
+        {
+            "name": "TestCopy",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Release/TestCopy.exe",
+            "args": ["c:\\x.avi", "c:\\y.avi"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": true
+        }   
     ]
 }

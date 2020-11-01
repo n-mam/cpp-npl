@@ -47,3 +47,15 @@ int main(int argc, char* argv[])
 
   return 0;
 }
+
+// onread 1048576, off 267386880
+// onwrite 1048576, off 267386880
+// onread 1048576, off 268435456
+// onwrite 1048576, off 268435456
+// onread 560640, off 269484032
+// onwrite 560640, off 269484032
+// rd ReadFile failed : 998
+
+// onread 364, off 0
+// onwrite 364, off 0
+// 000001D31BB03190 GQCS failed : 38
