@@ -1,3 +1,6 @@
+#ifndef NPL_HPP
+#define NPL_HPP
+
 #include <CDispatcher.hpp>
 #include <CDeviceSocket.hpp>
 #include <CProtocolFTP.hpp>
@@ -102,3 +105,5 @@ void TEST_DISPATCHER()
 }
 
 NS_END
+
+#endif

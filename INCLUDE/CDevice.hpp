@@ -5,6 +5,7 @@
 #include <CSubject.hpp>
 
 #include <memory>
+#include <iostream>
 #include <assert.h>
 #include <inttypes.h>
 

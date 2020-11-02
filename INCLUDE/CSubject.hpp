@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <iostream>
 #include <algorithm>
 #include <functional>
 
@@ -208,7 +209,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       }
       catch(const std::exception& e)
       {
-        std::cerr << e.what() << '\n';
+        std::cout << e.what() << '\n';
       }
       
       return value;
