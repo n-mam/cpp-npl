@@ -54,6 +54,8 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
     FD iFD;
 
+    FD iFDsync;
+
     CDevice() = default;
 
     CDevice(const std::string& aFilename, bool bCreateNew)
@@ -98,6 +100,17 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       else
       {
         std::cout << "CDevice() " << aFilename << ", Error : " << GetLastError() << "\n";
+      }
+
+      iFDsync = ReOpenFile(
+        iFD,
+        GENERIC_READ|GENERIC_WRITE,
+        FILE_SHARE_READ|FILE_SHARE_WRITE,
+        FILE_FLAG_SEQUENTIAL_SCAN);
+
+      if (iFDsync == INVALID_HANDLE_VALUE)
+      {
+        std::cout << "CDevice() " << aFilename << ", sync handle Error : " << GetLastError() << "\n";
       }
 
       #endif
@@ -216,6 +229,52 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       }
 
       #endif
+    }
+
+    virtual void ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    {
+      LARGE_INTEGER offset;
+      offset.QuadPart = o;
+
+      BOOL fRet = SetFilePointerEx(
+                    iFDsync,
+                    offset,
+                    NULL,
+                    FILE_BEGIN);
+
+      if (fRet)
+      {
+        DWORD NumberOfBytesRead = 0;
+        fRet = ReadFile(iFDsync, (LPVOID) b, l, &NumberOfBytesRead, NULL);
+
+        if (fRet == FALSE)
+        {
+          std::cout << iName << " ReadSync ReadFile failed : " << GetLastError() << "\n";
+        }
+      }
+    }
+
+    virtual void WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    {
+      LARGE_INTEGER offset;
+      offset.QuadPart = o;
+
+      BOOL fRet = SetFilePointerEx(
+                    iFDsync,
+                    offset,
+                    NULL,
+                    FILE_BEGIN);
+
+      if (fRet)
+      {
+        DWORD NumberOfBytesWritten = 0;
+        fRet = WriteFile(iFDsync, (LPVOID) b, l, &NumberOfBytesWritten, NULL);
+
+        if (fRet == FALSE)
+        {
+          std::cout << iName << " WriteSync WriteFile failed : " << GetLastError() << "\n";
+        }
+      }
     }
 
   protected:
