@@ -231,8 +231,9 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       #endif
     }
 
-    virtual void ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
+      DWORD nBytesRead;
       LARGE_INTEGER offset;
       offset.QuadPart = o;
 
@@ -244,18 +245,24 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (fRet)
       {
-        DWORD NumberOfBytesRead = 0;
-        fRet = ReadFile(iFDsync, (LPVOID) b, l, &NumberOfBytesRead, NULL);
+        fRet = ReadFile(iFDsync, (LPVOID) b, l, &nBytesRead, NULL);
 
         if (fRet == FALSE)
         {
           std::cout << iName << " ReadSync ReadFile failed : " << GetLastError() << "\n";
         }
+        else
+        {
+          return nBytesRead;
+        }
       }
+
+      return -1;
     }
 
-    virtual void WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0) override
     {
+      DWORD nBytesWritten;
       LARGE_INTEGER offset;
       offset.QuadPart = o;
 
@@ -267,14 +274,19 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (fRet)
       {
-        DWORD NumberOfBytesWritten = 0;
-        fRet = WriteFile(iFDsync, (LPVOID) b, l, &NumberOfBytesWritten, NULL);
+        fRet = WriteFile(iFDsync, (LPVOID) b, l, &nBytesWritten, NULL);
 
         if (fRet == FALSE)
         {
           std::cout << iName << " WriteSync WriteFile failed : " << GetLastError() << "\n";
         }
+        else
+        {
+          return nBytesWritten;
+        }
       }
+
+      return -1;
     }
 
   protected:

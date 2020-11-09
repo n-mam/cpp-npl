@@ -76,6 +76,34 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       }
     }
 
+    virtual int32_t ReadSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    {
+      std::lock_guard<std::mutex> lg(iLock);
+
+      auto target = iTarget.lock();
+
+      if (target)
+      {
+        return target->ReadSync(b, l, o);
+      }
+
+      return -1;
+    }
+
+    virtual int32_t WriteSync(const uint8_t *b = nullptr, size_t l = 0, uint64_t o = 0)
+    {
+      std::lock_guard<std::mutex> lg(iLock);
+
+      auto target = iTarget.lock();
+
+      if (target)
+      {
+        return target->WriteSync(b, l, o);
+      }
+
+      return -1;
+    }
+
     virtual void OnAccept(void)
     {
       std::lock_guard<std::mutex> lg(iLock);
