@@ -388,7 +388,7 @@ class CDeviceSocket : public CDevice
 
       if (ssl)
       {
-        int rc = BIO_write(rbio, b, n);
+        int rc = BIO_write(rbio, b, static_cast<int>(n));
 
         assert(rc == n);
 
@@ -490,7 +490,7 @@ class CDeviceSocket : public CDevice
     {
       if (ssl)
       {
-        SSL_write(ssl, b, l);
+        SSL_write(ssl, b, static_cast<int>(l));
         UpdateWBIO();
       }
       else

@@ -176,7 +176,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
       (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-      BOOL fRet = ReadFile(iFD, (LPVOID) ctx->b, l, NULL, &ctx->ol);
+      BOOL fRet = ReadFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
@@ -221,7 +221,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
       (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
-      BOOL fRet = WriteFile(iFD, (LPVOID) ctx->b, l, NULL, &ctx->ol);
+      BOOL fRet = WriteFile(iFD, (LPVOID) ctx->b, static_cast<DWORD>(l), NULL, &ctx->ol);
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
@@ -245,7 +245,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (fRet)
       {
-        fRet = ReadFile(iFDsync, (LPVOID) b, l, &nBytesRead, NULL);
+        fRet = ReadFile(iFDsync, (LPVOID) b, static_cast<DWORD>(l), &nBytesRead, NULL);
 
         if (fRet == FALSE)
         {
@@ -274,7 +274,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (fRet)
       {
-        fRet = WriteFile(iFDsync, (LPVOID) b, l, &nBytesWritten, NULL);
+        fRet = WriteFile(iFDsync, (LPVOID) b, static_cast<DWORD>(l), &nBytesWritten, NULL);
 
         if (fRet == FALSE)
         {

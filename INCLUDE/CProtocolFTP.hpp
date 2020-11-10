@@ -390,7 +390,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
 
       uint32_t h1, h2, h3, h4, p1, p2;
 
-      int fRet = sscanf(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
+      int fRet = sscanf_s(spec.c_str(), "(%d,%d,%d,%d,%d,%d)", &h1, &h2, &h3, &h4, &p1, &p2);
 
       if (fRet < 6)
       {
