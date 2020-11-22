@@ -5,6 +5,7 @@
 #define NS_END }
 
 #include <map>
+#include <any>
 #include <mutex>
 #include <atomic>
 #include <vector>
@@ -135,7 +136,13 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       iConnected = false;
       NotifyDisconnect();
       MarkRemoveAllListeners();
-      MarkRemoveSelfAsListener();  
+      MarkRemoveSelfAsListener();
+    }
+
+    virtual void OnEvent(std::any e)
+    {
+      std::lock_guard<std::mutex> lg(iLock);
+      NotifyEvent(e);
     }
 
     virtual const SPCSubject& AddEventListener(const SPCSubject& observer)
@@ -356,6 +363,15 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       for (auto& observer : iObservers)
       {
         observer->OnAccept();
+      }
+      ProcessMarkRemoveAllListeners();
+    }
+
+    virtual void NotifyEvent(std::any e)
+    {
+      for (auto& observer : iObservers)
+      {
+        observer->OnEvent(e);
       }
       ProcessMarkRemoveAllListeners();
     }
