@@ -118,7 +118,14 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       iDevicetype = EDeviceType::EDevFile;
     }
 
-    virtual ~CDevice() {};
+    virtual ~CDevice()
+    {
+      if (iDevicetype == EDeviceType::EDevFile)
+      {
+        CloseHandle(iFD);
+        CloseHandle(iFDsync);
+      }
+    };
 
     virtual EDeviceType GetDeviceType(void)
     {
