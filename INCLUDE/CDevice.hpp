@@ -89,7 +89,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         GENERIC_READ|GENERIC_WRITE,
         FILE_SHARE_READ|FILE_SHARE_WRITE,
         NULL,
-        (bCreateNew ? CREATE_ALWAYS : OPEN_ALWAYS),
+        (bCreateNew ? CREATE_ALWAYS : OPEN_EXISTING),
         FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
         NULL);
 
@@ -102,11 +102,20 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         std::cout << "CDevice() " << aFilename << ", Error : " << GetLastError() << "\n";
       }
 
-      iFDsync = ReOpenFile(
-        iFD,
-        GENERIC_READ|GENERIC_WRITE,
-        FILE_SHARE_READ|FILE_SHARE_WRITE,
-        FILE_FLAG_SEQUENTIAL_SCAN);
+      // iFDsync = ReOpenFile(
+      //   iFD,
+      //   GENERIC_READ|GENERIC_WRITE,
+      //   FILE_SHARE_READ|FILE_SHARE_WRITE,
+      //   FILE_FLAG_SEQUENTIAL_SCAN);
+
+      iFDsync = CreateFileA(
+              aFilename.c_str(),
+              GENERIC_READ|GENERIC_WRITE,
+              FILE_SHARE_READ|FILE_SHARE_WRITE,
+              NULL,
+              OPEN_EXISTING,
+              FILE_FLAG_NO_BUFFERING,
+              NULL);
 
       if (iFDsync == INVALID_HANDLE_VALUE)
       {
