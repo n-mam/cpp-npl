@@ -114,7 +114,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
               FILE_SHARE_READ|FILE_SHARE_WRITE,
               NULL,
               OPEN_EXISTING,
-              FILE_FLAG_NO_BUFFERING,
+              FILE_ATTRIBUTE_NORMAL,
               NULL);
 
       if (iFDsync == INVALID_HANDLE_VALUE)
@@ -122,7 +122,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         std::cout << "CDevice() " << aFilename << ", sync handle Error : " << GetLastError() << "\n";
       }
 
-      #endif
+      #endif 
 
       iDevicetype = EDeviceType::EDevFile;
     }
