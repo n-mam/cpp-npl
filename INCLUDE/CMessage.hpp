@@ -1,12 +1,12 @@
 #ifndef MESSAGE_HPP
 #define MESSAGE_HPP
 
+#include <Util.hpp>
+
 #include <map>
 #include <string>
 #include <vector>
 #include <sstream>
-
-#include <Util.hpp>
 
 NS_NPL
 

@@ -1,9 +1,9 @@
 #ifndef LISTENER_HPP
 #define LISTENER_HPP
 
-#include <functional>
-
 #include <CSubject.hpp>
+
+#include <functional>
 
 NS_NPL
 

@@ -2,8 +2,10 @@
 #define PROTOCOLWS_HPP
 
 #include <CMessage.hpp>
-#include <Encryption.hpp>
 #include <CProtocolHTTP.hpp>
+
+#include <Util.hpp>
+#include <Encryption.hpp>
 
 NS_NPL
 
