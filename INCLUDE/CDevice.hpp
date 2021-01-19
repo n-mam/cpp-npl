@@ -84,6 +84,8 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       #ifdef WIN32
 
+      iConnected = true;
+
       iFD = CreateFileA(
         aFilename.c_str(),
         GENERIC_READ|GENERIC_WRITE,
@@ -93,20 +95,11 @@ class CDevice : public CSubject<uint8_t, uint8_t>
         FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
         NULL);
 
-      if (iFD != INVALID_HANDLE_VALUE)
+      if (iFD == INVALID_HANDLE_VALUE)
       {
-        iConnected = true;
-      }
-      else
-      {
+        iConnected = false;
         std::cout << "CDevice() " << aFilename << ", Error : " << GetLastError() << "\n";
       }
-
-      // iFDsync = ReOpenFile(
-      //   iFD,
-      //   GENERIC_READ|GENERIC_WRITE,
-      //   FILE_SHARE_READ|FILE_SHARE_WRITE,
-      //   FILE_FLAG_SEQUENTIAL_SCAN);
 
       iFDsync = CreateFileA(
               aFilename.c_str(),
@@ -119,6 +112,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (iFDsync == INVALID_HANDLE_VALUE)
       {
+        iConnected = false;
         std::cout << "CDevice() " << aFilename << ", sync handle Error : " << GetLastError() << "\n";
       }
 

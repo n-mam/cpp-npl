@@ -77,7 +77,16 @@ auto make_http_client(const std::string& host, int port)
 auto make_file(const std::string& file, bool bCreate = false)
 {
   auto device = std::make_shared<CDevice>(file, bCreate);
-  D->AddEventListener(device);
+
+  if (device->IsConnected())
+  {
+    D->AddEventListener(device);
+  }
+  else
+  {
+    device.reset();
+  }
+
   return device;
 }
 
