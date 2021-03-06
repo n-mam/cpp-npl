@@ -228,6 +228,8 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       memmove((void *)ctx->b, b, l);
 
+      ctx->bFree = true;
+
       (ctx->ol).Offset = o & 0x00000000FFFFFFFF;
       (ctx->ol).OffsetHigh = (o & 0xFFFFFFFF00000000) >> 32;
 
