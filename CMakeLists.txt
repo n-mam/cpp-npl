@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 
 project (NPL)
 
-# SET OPENSSL_ROOT_DIR=C:/vcpkg/installed/x64-windows
+# SET OPENSSL_ROOT_DIR=D:/vcpkg/installed/x64-windows
 
 find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
