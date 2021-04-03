@@ -53,7 +53,7 @@ void test_http_client(const std::string& host, int port)
 }
 
 void test_ws_server(const std::string& host, int port)
-{ 
+{
   auto ws = NPL::make_ws_server(
     host, port, TLS::YES, 
     [] (SPCProtocol c, const std::string& m) 

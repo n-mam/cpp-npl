@@ -1,7 +1,7 @@
 #ifndef MESSAGE_HPP
 #define MESSAGE_HPP
 
-#include <Util.hpp>
+#include <osl.hpp>
 
 #include <map>
 #include <string>

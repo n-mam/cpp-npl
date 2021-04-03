@@ -18,22 +18,22 @@ int main(int argc, char* argv[])
 
   auto ob = std::make_shared<NPL::CListener>(
     nullptr,
-	  [wd, off = 0ULL](const uint8_t *b, size_t n) mutable
-	  {
+    [wd, off = 0ULL](const uint8_t *b, size_t n) mutable
+    {
       std::cout << "onread " << n << ", off " << off << "\n";
-	    if (n)
-	    {
-	      wd->Write(b, n, off);
-	    }
-	    off += n;
+      if (n)
+      {
+        wd->Write(b, n, off);
+      }
+      off += n;
     },
     [rd, off = 0ULL](const uint8_t *b, size_t n) mutable
-	  {
+    {
       std::cout << "onwrite " << n << ", off " << off << "\n";
-	    if (n)
-	    {
-	      rd->Read(b, BUFSIZE, off += n);
-	    }
+      if (n)
+      {
+        rd->Read(b, BUFSIZE, off += n);
+      }
     });
 
   ob->SetName("ob");
