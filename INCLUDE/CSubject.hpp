@@ -32,7 +32,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     {
       std::lock_guard<std::mutex> lg(iLock);
       RemoveAllEventListenersInternal();
-      std::cout << "~CSubject : " + iName + "\n";
+      std::cout << "~CSubject : " + GetProperty("name") << std::endl;
     }
 
     virtual void SetTarget(const WPCSubject& target)
@@ -189,16 +189,6 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     {
       return false;
     }
-    
-    virtual std::string GetName(void)
-    {
-      return iName;
-    }
-
-    virtual void SetName(const std::string& aName)
-    {
-      iName = aName;
-    }
 
     SPCSubject GetDispatcher(void)
     {
@@ -225,7 +215,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
          }
        } 
     }
-    
+
     virtual void SetProperty(const std::string& key, const std::string& value)
     {
       std::lock_guard<std::mutex> lg(iLock);
@@ -269,8 +259,6 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     WPCSubject iTarget;
 
     bool iConnected = false;
-
-    std::string iName = "Subject";
 
     bool iMarkRemoveAllListeners = false;
 

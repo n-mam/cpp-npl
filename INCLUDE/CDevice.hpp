@@ -139,7 +139,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << iName << " CDevice::Read() not connected\n";
+        std::cout << GetProperty("name") << " CDevice::Read() not connected\n";
         return nullptr;
       }
 
@@ -165,7 +165,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if ((int)ctx->n == -1)
       {
-        std::cout << iName << " read() failed, error : " << strerror(errno) << "\n";
+        std::cout << GetProperty("name") << " read() failed, error : " << strerror(errno) << "\n";
 
         if (!b)
         {
@@ -190,7 +190,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
-        std::cout << iName << " ReadFile failed : " << GetLastError() << "\n";
+        std::cout << GetProperty("name") << " ReadFile failed : " << GetLastError() << "\n";
       }
 
       return nullptr;
@@ -202,7 +202,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
     {
       if (!iConnected)
       {
-        std::cout << iName << " CDevice::Write() not connected\n";
+        std::cout << GetProperty("name") << " CDevice::Write() not connected\n";
         return;
       }
 
@@ -214,7 +214,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (rc == -1)
       {
-        std::cout << iName << "CDevice::Write() failed, error : " << strerror(errno) << "\n";
+        std::cout << GetProperty("name") << "CDevice::Write() failed, error : " << strerror(errno) << "\n";
         assert(false);
       }
 
@@ -237,7 +237,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
       if (!fRet && GetLastError() != ERROR_IO_PENDING)
       {
-        std::cout << iName << " WriteFile() failed : " << GetLastError() << "\n";
+        std::cout << GetProperty("name") << " WriteFile() failed : " << GetLastError() << "\n";
       }
 
       #endif
@@ -261,7 +261,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
         if (fRet == FALSE)
         {
-          std::cout << iName << " ReadSync ReadFile failed : " << GetLastError() << "\n";
+          std::cout << GetProperty("name") << " ReadSync ReadFile failed : " << GetLastError() << "\n";
         }
         else
         {
@@ -290,7 +290,7 @@ class CDevice : public CSubject<uint8_t, uint8_t>
 
         if (fRet == FALSE)
         {
-          std::cout << iName << " WriteSync WriteFile failed : " << GetLastError() << "\n";
+          std::cout << GetProperty("name") << " WriteSync WriteFile failed : " << GetLastError() << "\n";
         }
         else
         {

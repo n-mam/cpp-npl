@@ -1,7 +1,6 @@
-#include <iostream>
 #include <npl.hpp>
 
-using namespace NPL;
+#include <iostream>
 
 void test_ws_server(const std::string& host, int port);
 void test_ftp_client(const std::string& host, int port);
@@ -41,7 +40,7 @@ void test_http_client(const std::string& host, int port)
 
         j.SetKey("api", "TRAIL");
 
-        auto http = std::dynamic_pointer_cast<CProtocolHTTP>(p);
+        auto http = std::dynamic_pointer_cast<NPL::CProtocolHTTP>(p);
 
         if (http)
         {
@@ -55,8 +54,8 @@ void test_http_client(const std::string& host, int port)
 void test_ws_server(const std::string& host, int port)
 {
   auto ws = NPL::make_ws_server(
-    host, port, TLS::YES, 
-    [] (SPCProtocol c, const std::string& m) 
+    host, port, NPL::TLS::YES, 
+    [] (NPL::SPCProtocol c, const std::string& m) 
     {
       std::cout << "client : " << m << "\n";
 
@@ -90,7 +89,7 @@ void test_ftp_client(const std::string& host, int port)
    */
   ftp->StartClient();
 
-  DCProt protection = DCProt::Protected;
+  auto protection = NPL::DCProt::Protected;
 
   /**
    * Directory listing. The lambda argument is an output callback 

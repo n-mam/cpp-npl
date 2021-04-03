@@ -1,22 +1,21 @@
-#include <iostream>
-#include <memory>
-
 #include <npl.hpp>
-#include <osl.hpp>
+
+#include <memory>
+#include <iostream>
 
 constexpr int BUFSIZE = (1 * 1024 * 1024);
 
 int main(int argc, char* argv[])
 {
   auto rd = NPL::make_file(argv[1]);
-  rd->SetName("rd");
+  rd->SetProperty("name", "rd");
 
   auto wd = NPL::make_file(argv[2], true);
-  wd->SetName("wd");
+  wd->SetProperty("name", "wd");
 
   uint8_t *buf = (uint8_t *) calloc(BUFSIZE, 1);
 
-  auto ob = std::make_shared<NPL::CListener>(
+  auto obv = std::make_shared<NPL::CListener>(
     nullptr,
     [wd, off = 0ULL](const uint8_t *b, size_t n) mutable
     {
@@ -36,10 +35,10 @@ int main(int argc, char* argv[])
       }
     });
 
-  ob->SetName("ob");
+  obv->SetProperty("name", "observer");
 
-  rd->AddEventListener(ob);
-  wd->AddEventListener(ob);
+  rd->AddEventListener(obv);
+  wd->AddEventListener(obv);
 
   rd->Read(buf, BUFSIZE, 0);
 

@@ -23,7 +23,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
     CDispatcher()
     {
-      iName = "D";
+      SetProperty("name", "D");
 
       #ifdef linux
       iEventPort = epoll_create1(0);
@@ -94,7 +94,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
       GetDispatcher()->AddEventListener(iDServer)->AddEventListener(lso);
 
-      iDServer->SetName("DC-LS");
+      iDServer->SetProperty("name", "DC-LS");
 
       iDServer->StartSocketServer();
 
@@ -104,7 +104,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
       GetDispatcher()->AddEventListener(iDClient);
 
-      iDClient->SetName("DC-CT");
+      iDClient->SetProperty("name", "DC-CT");
 
       iDClient->StartSocketClient();
     }
@@ -251,7 +251,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
 
             #endif
 
-            //std::cout << NPL::EIOToChar(ctx->type) << " " << o->GetName() << " : " << (void *)k << ", n " << ctx->n << "\n";            
+            //std::cout << NPL::EIOToChar(ctx->type) << " " << o->GetProperty("name") << " : " << (void *)k << ", n " << ctx->n << "\n";            
 
             if (ctx->type == EIOTYPE::READ)
             {

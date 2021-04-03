@@ -28,9 +28,9 @@ auto make_ftp(const std::string& host, int port, TLS ftps = TLS::NO)
 
   cc->SetTLS(ftps);
 
-  cc->SetName("ftp-socket");
+  cc->SetProperty("name", "ftp-socket");
 
-  ftp->SetName("ftp-protocol");
+  ftp->SetProperty("name", "ftp-protocol");
 
   D->AddEventListener(cc)->AddEventListener(ftp);
 
@@ -44,11 +44,11 @@ auto make_ws_server(const std::string& host, int port, TLS tls = TLS::NO, TOnCli
 
   cc->SetTLS(tls);
 
-  cc->SetName("ws-cc");
+  cc->SetProperty("name", "ws-cc");
 
   cc->SetHostAndPort(host, port);
 
-  lso->SetName("ws-lso");
+  lso->SetProperty("name", "ws-lso");
 
   lso->SetClientCallback(cbk);
 
@@ -64,9 +64,9 @@ auto make_http_client(const std::string& host, int port)
 
   sock->SetHostAndPort(host, port);
 
-  sock->SetName("http-socket");
+  sock->SetProperty("name", "http-socket");
 
-  http->SetName("http-protocol");
+  http->SetProperty("name", "http-protocol");
 
   D->AddEventListener(sock)->AddEventListener(http);
 

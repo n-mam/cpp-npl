@@ -49,7 +49,7 @@ class CDeviceSocket : public CDevice
 
     ~CDeviceSocket()
     {
-      std::cout << "~CDeviceSocket : " << iName << " ->\n";
+      std::cout << "~CDeviceSocket : " << GetProperty("name") << " ->\n";
       StopSocket();
       shutdown((SOCKET)iFD, 0); //sd_recv
       closesocket((SOCKET)iFD);
@@ -57,7 +57,7 @@ class CDeviceSocket : public CDevice
       {
         SSL_free(ssl);
       }
-      std::cout << "~" << iName << " shutdown(sd_recv)\n";
+      std::cout << "~" << GetProperty("name") << " shutdown(sd_recv)\n";
     }
 
     virtual void StopSocket(void)
@@ -71,7 +71,7 @@ class CDeviceSocket : public CDevice
           if (!(flag & SSL_SENT_SHUTDOWN))
           {
             int rc = SSL_shutdown(ssl);
-            std::cout << iName << " StopSocket : ssl_shutdown() rc : " << rc << "\n";          
+            std::cout << GetProperty("name") << " StopSocket : ssl_shutdown() rc : " << rc << "\n";          
             UpdateWBIO();
           }
         }
@@ -80,7 +80,7 @@ class CDeviceSocket : public CDevice
 
         shutdown((SOCKET)iFD, 1); //sd_send
 
-        std::cout << iName << " StopSocket : shutdown(sd_send)\n";
+        std::cout << GetProperty("name") << " StopSocket : shutdown(sd_send)\n";
       }
     }
 
@@ -274,7 +274,7 @@ class CDeviceSocket : public CDevice
 
       if (flag & SSL_RECEIVED_SHUTDOWN)
       {
-        std::cout << iName << " CheckPeerSSLShutdown : SSL_RECEIVED_SHUTDOWN, flags : " << flag << "\n";
+        std::cout << GetProperty("name") << " CheckPeerSSLShutdown : SSL_RECEIVED_SHUTDOWN, flags : " << flag << "\n";
 
         if (!(flag & SSL_SENT_SHUTDOWN))
         {
@@ -337,7 +337,7 @@ class CDeviceSocket : public CDevice
 
       iConnectedClient->iSocketType = ESocketType::EAcceptedSocket;
 
-      iConnectedClient->SetName("AS");
+      iConnectedClient->SetProperty("name", "AS");
 
       iConnectedClient->iConnected = true;
 
@@ -400,7 +400,7 @@ class CDeviceSocket : public CDevice
           {
             iHandshakeDone = true;
 
-            std::cout << iName << " handshake done\n";
+            std::cout << GetProperty("name") << " handshake done\n";
 
             if (iOnHandShake)
             {

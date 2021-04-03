@@ -413,7 +413,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       iDataChannel = std::make_shared<CDeviceSocket>();
 
-      iDataChannel->SetName("ftp-dc");
+      iDataChannel->SetProperty("name", "ftp-dc");
 
       auto observer = std::make_shared<CListener>(
         [this]() {
@@ -429,7 +429,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           OnDataChannelDisconnect();
         });
 
-      observer->SetName("dc-ob");
+      observer->SetProperty("name", "dc-ob");
 
       auto D = GetDispatcher();
 
@@ -501,7 +501,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           fLocal.c_str(),
           cmd == "RETR" ? true : false);
 
-        iFileDevice->SetName("fl");
+        iFileDevice->SetProperty("name", "fl");
 
         iCurrentFileOffset = 0;
 
@@ -518,7 +518,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
           }
         );
 
-        observer->SetName("fl-ob");
+        observer->SetProperty("name", "fl-ob");
 
         auto D = GetDispatcher();
 
