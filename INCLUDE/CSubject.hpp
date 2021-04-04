@@ -26,13 +26,16 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
     using SPCSubject = std::shared_ptr<CSubject<T1, T2>>;
     using WPCSubject = std::weak_ptr<CSubject<T1, T2>>;
 
-    CSubject() = default;
+    CSubject()
+    {
+      SetProperty("name", "unknown");
+    }
 
     virtual ~CSubject()
     {
       std::lock_guard<std::mutex> lg(iLock);
       RemoveAllEventListenersInternal();
-      std::cout << "~CSubject : " + GetProperty("name") << std::endl;
+      std::cout << "~CSubject : " + iPropertyMap.at("name") << std::endl;
     }
 
     virtual void SetTarget(const WPCSubject& target)

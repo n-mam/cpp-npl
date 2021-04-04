@@ -28,9 +28,9 @@ cmake --build .
 
 FTP example
 ```cpp
-#include <iostream>
-
 #include <npl.hpp>
+
+#include <iostream>
 
 int main(void)
 {

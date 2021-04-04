@@ -18,9 +18,9 @@ int main(int argc, char *argv[])
   auto host = std::string(argv[1]);
   auto port = std::stoi(argv[2]);
 
-  //test_ftp_client(host, port);
+  test_ftp_client(host, port);
   //test_ws_server(host, port);
-  test_http_client(host, port);
+  //test_http_client(host, port);
 
   getchar();
 
@@ -81,15 +81,13 @@ void test_ftp_client(const std::string& host, int port)
   /**
    * Set the login credentials.
    */
-  ftp->SetCredentials("ftpuser", "ftpuser");
+  ftp->SetCredentials("test", "welcome123");
 
   /**
    * Start the protocol client. This would asynchronously
    * trigger connect and the login sequence
    */
   ftp->StartClient();
-
-  auto protection = NPL::DCProt::Protected;
 
   /**
    * Directory listing. The lambda argument is an output callback 
@@ -98,13 +96,20 @@ void test_ftp_client(const std::string& host, int port)
    * more data. Returning false at any point terminates the transfer.
    */
   ftp->ListDirectory(
-    [list = std::string("")] (const char *b, size_t n) mutable {
-    if (b)
-     list.append(std::string(b, n));
-    else
-     std::cout << list;
-    return true;
-  }, "", protection);
+    [list = std::string()] (const char *b, size_t n) mutable {
+      if (b)
+      {
+        list.append(std::string(b, n));
+      }
+      else
+      {
+        std::cout << list;
+      }
+      return true;
+    },
+    "",
+    NPL::DCProt::Protected
+  );
 
   /**
    * Set the current directory
@@ -117,15 +122,20 @@ void test_ftp_client(const std::string& host, int port)
    * times with chunks of file data. A null "b" (buffer) pointer indicates 
    * that there's no more file data to download. Returning false at any point
    * terminates the transfer. local file arg is optional; if not specified then 
-   * downloded data can only be accesed via the callback.
+   * downloaded data can only be accesed via the callback.
    */
-  ftp->Download([](const char *b, size_t n) {
-    if (b)
-      std::cout << std::string(b, n);
-    else
-      std::cout << "Download complete.\n";
-    return true;
-  }, "bootstrap-vcpkg.bat", "./download.bat", protection);
+  ftp->Download(
+    [](const char *b, size_t n) {
+      if (b)
+        std::cout << std::string(b, n);
+      else
+        std::cout << "Download complete" << std::endl;
+      return true;
+    },
+    "bootstrap-vcpkg.bat",
+    "./download.bat",
+    NPL::DCProt::Protected
+  );
 
   /**
    * File upload. The lambda argument is an output callback which is invoked
@@ -135,9 +145,14 @@ void test_ftp_client(const std::string& host, int port)
    * protection is 'C'lear for the upload implying a granular PROT levels on a 
    * per transfer basis.
    */
-  ftp->Upload([](const char *b, size_t n) {
-    return true;
-  }, "README.txt", "../README.md", protection);
+  ftp->Upload(
+    [](const char *b, size_t n) {
+      return true;
+    },
+    "README.txt",
+    "../README.md", 
+    NPL::DCProt::Protected
+  );
 
   /**
    * Get the current directory
