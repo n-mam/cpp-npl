@@ -15,27 +15,73 @@ namespace NPL
 
     virtual void ParseMessage() override
     {
-      std::istringstream ss(iMessage);
+      bool firstLineReceived = false;
+      bool headersReceived = false;
+      bool bodyReceived = false;
+      int bodyLength = 0;
 
-      std::string line;
-
-      while (std::getline(ss, line, '\n'))
+      if (iMessage.find("\r\n") != std::string::npos)
       {
-        line.pop_back();
+        firstLineReceived = true;
 
-        size_t index = line.find(": ");
+        size_t endofHeaders = iMessage.find("\r\n\r\n");
 
-        if (index != std::string::npos)
+        if (endofHeaders != std::string::npos)
         {
-          std::string key, value;
+          headersReceived = true;
 
-          key = line.substr(0, index);
+          size_t pos = iMessage.find("Content-Length");
 
-          value = line.substr(index + 2);
+          if (pos != std::string::npos)
+          {
+            pos += strlen("Content-Length: ");
 
-          SetHeader(key, value);
+            bodyLength = std::stoi(
+              std::string(
+                iMessage,
+                pos,
+                iMessage.find("\r\n", pos) - pos - 1));
+
+            if (bodyLength)
+            {
+              size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
+
+              if (iMessage.size() == total)
+              {
+                bodyReceived = true;
+                iPayload = iMessage.substr(endofHeaders + strlen("\r\n\r\n"), bodyLength);
+              }
+            }
+          }
         }
       }
+
+      if (firstLineReceived && headersReceived && 
+          (bodyLength ? bodyReceived : true))
+      {
+        std::istringstream ss(iMessage);
+
+        std::string line;
+
+        while (std::getline(ss, line, '\n'))
+        {
+          line.pop_back();
+
+          size_t index = line.find(": ");
+
+          if (index != std::string::npos)
+          {
+            std::string key, value;
+
+            key = line.substr(0, index);
+
+            value = line.substr(index + 2);
+
+            SetHeader(key, value);
+          }
+        }
+      }
+
     }
 
     public:
@@ -48,6 +94,11 @@ namespace NPL
     virtual std::string GetHeader(const std::string& key)
     {
       return iHeaders[key];
+    }
+
+    virtual size_t HeaderCount(void)
+    {
+      return iHeaders.size();
     }
 
     virtual void SetHeader(const std::string& key, const std::string& value)
@@ -74,14 +125,7 @@ namespace NPL
 
     virtual const char * GetPayloadBuffer(void) override
     {
-      if (GetHeader("Content-Length").size())
-      {
-        return iMessage.c_str() + 
-               iMessage.find("\r\n\r\n") + 
-               strlen("\r\n\r\n");
-      }
-
-      return nullptr;
+      return GetPayloadString().c_str();
     }
   };
 
@@ -114,53 +158,11 @@ namespace NPL
 
     virtual SPCMessage IsMessageComplete(const std::vector<uint8_t>& b) override
     {
-      bool firstLineReceived = false;
-      bool headersReceived = false;
-      bool bodyReceived = false;
-      int bodyLength = 0;
+      auto m = std::make_shared<CHTTPMessage>(b);
 
-      std::string m((char *) b.data(), b.size());
-
-      if (m.find("\r\n") != std::string::npos)
+      if (m->HeaderCount())
       {
-        firstLineReceived = true;
-
-        size_t endofHeaders = m.find("\r\n\r\n");
-
-        if (endofHeaders != std::string::npos)
-        {
-          headersReceived = true;
-
-          size_t pos = m.find("Content-Length");
-
-          if (pos != std::string::npos)
-          {
-            pos += strlen("Content-Length: ");
-
-            bodyLength = std::stoi(
-              std::string(
-                m, 
-                pos, 
-                m.find("\r\n", pos) - pos - 1));
-
-            if (bodyLength)
-            {
-              size_t total = endofHeaders + strlen("\r\n\r\n") + bodyLength;
-
-              if (m.size() == total)
-              {
-                bodyReceived = true;
-              }
-            }
-          }
-        }
-      }
-
-      if (firstLineReceived && 
-          headersReceived && 
-          (bodyLength ? bodyReceived : true))
-      {
-        return std::make_shared<CHTTPMessage>(b);
+        return m;
       }
 
       return nullptr;

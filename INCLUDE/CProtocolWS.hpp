@@ -14,12 +14,11 @@ namespace NPL
 
     std::string iPayload;
 
-    virtual void ParseMessage() override { }
-
-    public:
-
-    CWSMessage(const uint8_t *b, size_t l) : CMessage(b, l)
+    virtual void ParseMessage() override
     {
+      size_t l = iMessage.size();
+      uint8_t *b = (uint8_t *) iMessage.data();
+
       assert(l >= 2);
 
       size_t payloadLength = 0;
@@ -75,6 +74,13 @@ namespace NPL
           iPayload += b[payloadIndex + i] ^ maskingKey[(i % 4)];
         }
       }
+    }
+
+    public:
+
+    CWSMessage(const uint8_t *b, size_t l) : CMessage(b, l)
+    {
+      ParseMessage();
     }
 
     uint8_t GetOpCode(void)

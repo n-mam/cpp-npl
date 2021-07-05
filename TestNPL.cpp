@@ -19,8 +19,8 @@ int main(int argc, char *argv[])
   auto host = std::string(argv[1]);
   auto port = std::stoi(argv[2]);
 
-  test_ftp_client(host, port);
-  //test_ws_server(host, port);
+  //test_ftp_client(host, port);
+  test_ws_server(host, port);
   //test_http_client(host, port);
 
   getchar();
