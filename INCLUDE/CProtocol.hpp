@@ -1,17 +1,59 @@
 #ifndef PROTOCOL_HPP
 #define PROTOCOL_HPP
 
-#include <CMessage.hpp>
 #include <CSubject.hpp>
 
 #include <functional>
 
-NS_NPL
-
-template <typename T1 = uint8_t, typename T2 = uint8_t>
-class CProtocol : public CSubject<T1, T2>
+namespace NPL 
 {
-  public:
+  class CMessage
+  {
+    protected:
+
+    std::string iMessage;
+
+    virtual void ParseMessage(void) { }
+
+    public:
+  
+    CMessage(const std::string& m)
+    {
+      iMessage = m;
+    }
+
+    CMessage(const uint8_t *b, size_t l)
+    {
+      iMessage = std::string((char *)b, l);
+    }
+
+    CMessage(const std::vector<uint8_t>& m)
+    {
+      iMessage = std::string((char *) m.data(), m.size());
+    }
+
+    virtual size_t GetPayloadLength(void)
+    {
+      return iMessage.size();
+    }  
+
+    virtual const std::string& GetPayloadString(void)
+    {
+      return iMessage;
+    }
+
+    virtual const char * GetPayloadBuffer(void)
+    {
+      return iMessage.c_str();
+    }
+  };
+
+  using SPCMessage = std::shared_ptr<CMessage>;
+
+  template <typename T1 = uint8_t, typename T2 = uint8_t>
+  class CProtocol : public CSubject<T1, T2>
+  {
+    public:
 
     using SPCProtocol = std::shared_ptr<CProtocol<T1, T2>>;
 
@@ -120,10 +162,10 @@ class CProtocol : public CSubject<T1, T2>
         return sock->GetTLS();
       }
 
-      return TLS::NO;
+      return TLS::No;
     }
 
-  protected:
+    protected:
 
     virtual SPCMessage IsMessageComplete(const std::vector<T1>& b) = 0;
 
@@ -156,15 +198,12 @@ class CProtocol : public CSubject<T1, T2>
     TOnClientMessageCbk iClientMessageCallback = nullptr;
 
     std::string iProtocolState = "CONNECTING";
-};
+  };
 
-using SPCProtocol = std::shared_ptr<CProtocol<uint8_t, uint8_t>>;
+  using SPCProtocol = std::shared_ptr<CProtocol<uint8_t, uint8_t>>;
 
-using TOnClientMessageCbk = 
-  std::function<
-    void (SPCProtocol, const std::string&)
-  >;
-
-NS_END
+  using TOnClientMessageCbk = 
+    std::function<void (SPCProtocol, const std::string&)>;
+}
 
 #endif //PROTOCOL_HPP

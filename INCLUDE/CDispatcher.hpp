@@ -15,11 +15,21 @@
  #include <string.h>
 #endif
 
-NS_NPL
-
-class CDispatcher : public CSubject<uint8_t, uint8_t>
+namespace NPL
 {
-  public:
+  class CDispatcher : public CSubject<uint8_t, uint8_t>
+  {
+    private:
+
+    FD iEventPort;
+
+    std::thread iWorker;
+
+    SPCDeviceSocket iDServer;
+
+    SPCDeviceSocket iDClient;
+
+    public:
 
     CDispatcher()
     {
@@ -156,15 +166,7 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
       return observer;
     }
 
-  private:
-
-    FD iEventPort;
-
-    std::thread iWorker;
-
-    SPCDeviceSocket iDServer;
-
-    SPCDeviceSocket iDClient;
+    private:
 
     void Worker(void)
     {
@@ -307,11 +309,10 @@ class CDispatcher : public CSubject<uint8_t, uint8_t>
     {
       return true;
     }
-};
+  };
 
-using SPCDispatcher = std::shared_ptr<CDispatcher>;
-using UPCDispatcher = std::unique_ptr<CDispatcher>;
-
-NS_END
+  using SPCDispatcher = std::shared_ptr<CDispatcher>;
+  using UPCDispatcher = std::unique_ptr<CDispatcher>;
+}
 
 #endif //DISPATCHER_HPP;

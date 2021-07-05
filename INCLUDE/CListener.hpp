@@ -5,17 +5,17 @@
 
 #include <functional>
 
-NS_NPL
-
-using TListenerOnConnect = std::function<void (void)>;
-using TListenerOnRead = std::function<void (const uint8_t *b, size_t n)>;
-using TListenerOnWrite = std::function<void (const uint8_t *b, size_t n)>;
-using TListenerOnDisconnect = std::function<void (void)>;
-using TListenerOnAccept = std::function<void (void)>;
-
-class CListener : public CSubject<uint8_t, uint8_t>
+namespace NPL
 {
-  public:
+  using TListenerOnConnect = std::function<void (void)>;
+  using TListenerOnRead = std::function<void (const uint8_t *b, size_t n)>;
+  using TListenerOnWrite = std::function<void (const uint8_t *b, size_t n)>;
+  using TListenerOnDisconnect = std::function<void (void)>;
+  using TListenerOnAccept = std::function<void (void)>;
+
+  class CListener : public CSubject<uint8_t, uint8_t>
+  {
+    public:
 
     CListener() {}
 
@@ -75,15 +75,14 @@ class CListener : public CSubject<uint8_t, uint8_t>
       }
     }
 
-  protected:
+    protected:
 
     TListenerOnRead iCbkRead = nullptr;
     TListenerOnWrite iCbkWrite = nullptr;
     TListenerOnAccept iCbkAccept = nullptr;
     TListenerOnConnect iCbkConnect = nullptr;
     TListenerOnDisconnect iCbkDisconnect = nullptr;
-};
-
-NS_END
+  };
+}
 
 #endif //LISTENER_HPP

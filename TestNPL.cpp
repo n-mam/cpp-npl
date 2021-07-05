@@ -1,4 +1,5 @@
 #include <npl.hpp>
+#include <osl.hpp>
 
 #include <iostream>
 
@@ -54,7 +55,7 @@ void test_http_client(const std::string& host, int port)
 void test_ws_server(const std::string& host, int port)
 {
   auto ws = NPL::make_ws_server(
-    host, port, NPL::TLS::YES, 
+    host, port, NPL::TLS::Yes, 
     [] (NPL::SPCProtocol c, const std::string& m) 
     {
       std::cout << "client : " << m << "\n";
@@ -76,7 +77,7 @@ void test_ftp_client(const std::string& host, int port)
   /**
    * Create an FTP object.
    */
-  auto ftp = NPL::make_ftp(host, port, NPL::TLS::YES);
+  auto ftp = NPL::make_ftp(host, port, NPL::TLS::Yes);
 
   /**
    * Set the login credentials.

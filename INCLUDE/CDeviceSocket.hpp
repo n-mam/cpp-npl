@@ -9,31 +9,59 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-NS_NPL
-
-using TOnHandshake = std::function<void (void)>;
-
-enum class TLS : uint8_t
+namespace NPL 
 {
-  NO = 0,
-  YES,
-  Implicit //ftp
-};
+  using TOnHandshake = std::function<void (void)>;
 
-enum ESocketType : uint8_t
-{
-  ESocketInvalid = 0,
-  EClientSocket,
-  EListeningSocket,
-  EAcceptedSocket,
-};
+  enum class TLS : uint8_t
+  {
+    No = 0,
+    Yes,
+    Implicit //ftp
+  };
 
-class CDeviceSocket : public CDevice
-{
-  using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
-  using WPCDeviceSocket = std::weak_ptr<CDeviceSocket>;
+  enum ESocketType : uint8_t
+  {
+    EInvalidSocket = 0,
+    EClientSocket,
+    EListeningSocket,
+    EAcceptedSocket,
+  };
 
-  public:
+  class CDeviceSocket : public CDevice
+  {
+    using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
+    using WPCDeviceSocket = std::weak_ptr<CDeviceSocket>;
+
+    protected:
+
+    FD iAS;
+
+    int iPort = 0;
+
+    std::string iHost = "";
+
+    bool iStopped = false;
+
+    TLS iTLS = TLS::No;
+
+    SSL_CTX *ctx = nullptr;
+
+    SSL *ssl = nullptr;
+
+    BIO *rbio = nullptr;
+
+    BIO *wbio = nullptr;
+
+    bool iHandshakeDone = false;
+
+    TOnHandshake iOnHandShake = nullptr;
+
+    uint32_t iSocketType = ESocketType::EInvalidSocket;
+
+    public:
+
+    SPCDeviceSocket iConnectedClient = nullptr;
 
     CDeviceSocket()
     {
@@ -498,34 +526,8 @@ class CDeviceSocket : public CDevice
         CDevice::Write(b, l);
       }
     }
-
-    SPCDeviceSocket iConnectedClient = nullptr;
     
-  protected:
-
-    int iPort = 0;
-
-    std::string iHost = "";
-
-    uint32_t iSocketType = ESocketType::ESocketInvalid;
-
-    bool iStopped = false;
-
-    TLS iTLS = TLS::NO;
-
-    SSL_CTX *ctx = nullptr;
-
-    SSL *ssl = nullptr;
-
-    BIO *rbio = nullptr;
-
-    BIO *wbio = nullptr;
-
-    bool iHandshakeDone = false;
-
-    TOnHandshake iOnHandShake = nullptr;
-
-    FD iAS;
+    protected:
 
     #ifdef WIN32
     void * GetExtentionPfn(GUID guid, FD fd)
@@ -545,17 +547,16 @@ class CDeviceSocket : public CDevice
       return pfn;
     }
     #endif
-};
+  };
 
-using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
-using WPCDeviceSocket = std::weak_ptr<CDeviceSocket>;
-
-NS_END
+  using SPCDeviceSocket = std::shared_ptr<CDeviceSocket>;
+  using WPCDeviceSocket = std::weak_ptr<CDeviceSocket>;
+}
 
 #ifdef WIN32
- WSADATA wsaData;
- int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
- void * GetExtentionPfn(GUID guid, FD fd); 
+  WSADATA wsaData;
+  int winsockinit = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  void * GetExtentionPfn(GUID guid, FD fd); 
 #endif 
 
 #endif //SOCKET_HPP

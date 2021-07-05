@@ -1,9 +1,6 @@
 #ifndef SUBJECT_HPP
 #define SUBJECT_HPP
 
-#define NS_NPL namespace NPL {
-#define NS_END }
-
 #include <map>
 #include <any>
 #include <mutex>
@@ -16,15 +13,31 @@
 #include <algorithm>
 #include <functional>
 
-NS_NPL
-
-template <typename T1, typename T2>
-class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
+namespace NPL 
 {
-  public:
+  template <typename T1, typename T2>
+  class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
+  {
+    protected:
 
     using SPCSubject = std::shared_ptr<CSubject<T1, T2>>;
     using WPCSubject = std::weak_ptr<CSubject<T1, T2>>;
+    
+    std::mutex iLock;
+
+    WPCSubject iTarget;
+
+    bool iConnected = false;
+
+    bool iMarkRemoveAllListeners = false;
+
+    bool iMarkRemoveSelfAsListener = false;
+
+    std::vector<SPCSubject> iObservers;
+
+    std::map<std::string, std::string> iPropertyMap;
+
+    public:
 
     CSubject()
     {
@@ -255,21 +268,7 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       return ((value.size() && value == "true") ? true : false);
     }
 
-  protected:
-
-    std::mutex iLock;
-
-    WPCSubject iTarget;
-
-    bool iConnected = false;
-
-    bool iMarkRemoveAllListeners = false;
-
-    bool iMarkRemoveSelfAsListener = false;
-
-    std::vector<SPCSubject> iObservers;
-
-    std::map<std::string, std::string> iPropertyMap;
+    protected:
 
     virtual void ResetSubject(SPCSubject& subject)
     {
@@ -366,14 +365,13 @@ class CSubject : public std::enable_shared_from_this<CSubject<T1, T2>>
       }
       ProcessMarkRemoveAllListeners();
     }
-};
+  };
 
-template <typename T1, typename T2>
-using SPCSubject = std::shared_ptr<CSubject<T1, T2>>;
+  template <typename T1, typename T2>
+  using SPCSubject = std::shared_ptr<CSubject<T1, T2>>;
 
-template<typename T1, typename T2>
-using WPCSubject = std::weak_ptr<CSubject<T1, T2>>;
-
-NS_END
+  template<typename T1, typename T2>
+  using WPCSubject = std::weak_ptr<CSubject<T1, T2>>;
+}
 
 #endif //COMPONENT_HPP

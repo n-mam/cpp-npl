@@ -9,23 +9,33 @@
 #include <atomic>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <cstring>
 #include <functional>
 
-NS_NPL
-
-enum class DCProt : uint8_t
+namespace NPL 
 {
-  Clear = 0,
-  Protected
-};
+  class CFTPMessage : public CMessage
+  {
+    public:
 
-using TTransferCbk = std::function<bool (const char *, size_t)>;
-using TResponseCbk = std::function<void (const std::string&)>;
+    CFTPMessage(const std::vector<uint8_t>& m) : CMessage(m)
+    {
+    }  
+  };
 
-class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
-{
-  public:
+  enum class DCProt : uint8_t
+  {
+    Clear = 0,
+    Protected
+  };
+
+  using TTransferCbk = std::function<bool (const char *, size_t)>;
+  using TResponseCbk = std::function<void (const std::string&)>;
+
+  class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
+  {
+    public:
 
     CProtocolFTP()
     {
@@ -155,7 +165,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       CProtocol::Stop();
     }
 
-  protected:
+    protected:
 
     DCProt iDCProt = DCProt::Clear;
 
@@ -294,7 +304,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       TLS tls = GetChannelTLS(iTarget.lock());
 
-      if (tls == TLS::YES || tls == TLS::Implicit)
+      if (tls == TLS::Yes || tls == TLS::Implicit)
       {
         iCmdQ.emplace_back("PBSZ", "0", "", nullptr, nullptr);
 
@@ -355,7 +365,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
     {
       TLS tls = GetChannelTLS(iTarget.lock());
 
-      if (tls == TLS::YES)
+      if (tls == TLS::Yes)
       {
         iProtocolState = "AUTH";
         SendCommand("AUTH", "TLS");
@@ -675,7 +685,7 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
       {
         sock->InitializeSSL([this] () {
           TLS tls = GetChannelTLS(iTarget.lock()); 
-          if (tls == TLS::YES)
+          if (tls == TLS::Yes)
           {
             iProtocolState = "USER";
             SendCommand("USER", iUserName);
@@ -683,10 +693,9 @@ class CProtocolFTP : public CProtocol<uint8_t, uint8_t>
         });
       }
     }
-};
+  };
 
-using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;
-
-NS_END
+  using SPCProtocolFTP = std::shared_ptr<CProtocolFTP>;
+}
 
 #endif //PROTOCOLFTP_HPP

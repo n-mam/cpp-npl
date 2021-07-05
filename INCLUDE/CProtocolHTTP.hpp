@@ -3,11 +3,93 @@
 
 #include <CProtocol.hpp>
 
-NS_NPL
-
-class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
+namespace NPL 
 {
-  public:
+  class CHTTPMessage : public CMessage
+  {
+    protected:
+
+    std::string iPayload;
+
+    std::map<std::string, std::string> iHeaders;
+
+    virtual void ParseMessage() override
+    {
+      std::istringstream ss(iMessage);
+
+      std::string line;
+
+      while (std::getline(ss, line, '\n'))
+      {
+        line.pop_back();
+
+        size_t index = line.find(": ");
+
+        if (index != std::string::npos)
+        {
+          std::string key, value;
+
+          key = line.substr(0, index);
+
+          value = line.substr(index + 2);
+
+          SetHeader(key, value);
+        }
+      }
+    }
+
+    public:
+ 
+    CHTTPMessage(const std::vector<uint8_t>& m) : CMessage(m)
+    {
+      ParseMessage();
+    }
+
+    virtual std::string GetHeader(const std::string& key)
+    {
+      return iHeaders[key];
+    }
+
+    virtual void SetHeader(const std::string& key, const std::string& value)
+    {
+      iHeaders[key] = value;
+    }
+
+    virtual size_t GetPayloadLength(void) override
+    {
+      auto& h = GetHeader("Content-Length");
+
+      if (h.size())
+      {
+        return std::stoi(h);
+      }
+
+      return 0;
+    }
+
+    virtual const std::string& GetPayloadString(void) override
+    {
+      return iPayload;
+    }
+
+    virtual const char * GetPayloadBuffer(void) override
+    {
+      if (GetHeader("Content-Length").size())
+      {
+        return iMessage.c_str() + 
+               iMessage.find("\r\n\r\n") + 
+               strlen("\r\n\r\n");
+      }
+
+      return nullptr;
+    }
+  };
+
+  using SPCHTTPMessage = std::shared_ptr<CHTTPMessage>;
+
+  class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
+  {
+    public:
 
     void Post(const std::string& url, const std::string& body)
     {
@@ -23,7 +105,7 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
       Write((uint8_t *) req.str().c_str(), req.str().size(), 0);
     }
 
-  protected:
+    protected:
 
     virtual void StateMachine(SPCMessage m) override
     {
@@ -83,11 +165,9 @@ class CProtocolHTTP : public CProtocol<uint8_t, uint8_t>
 
       return nullptr;
     }
+  };
 
-};
-
-using SPCProtocolHTTP = std::shared_ptr<CProtocolHTTP>;
-
-NS_END
+  using SPCProtocolHTTP = std::shared_ptr<CProtocolHTTP>;
+}
 
 #endif //PROTOCOLHTTP_HPP

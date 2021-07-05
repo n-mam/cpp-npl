@@ -13,44 +13,44 @@
 #include <string.h>
 #endif
 
-NS_NPL
-
-enum EDeviceType : uint8_t
+namespace NPL 
 {
-  EDevNone = 0,
-  EDevFile,
-  EDevSock
-};
+  enum EDeviceType : uint8_t
+  {
+    EDevNone = 0,
+    EDevFile,
+    EDevSock
+  };
 
-enum EIOTYPE : uint8_t
-{
-  CONNECT = 0,
-  ACCEPT,
-  READ,
-  WRITE,
-  IOCTL
-};
+  enum EIOTYPE : uint8_t
+  {
+    CONNECT = 0,
+    ACCEPT,
+    READ,
+    WRITE,
+    IOCTL
+  };
 
-struct Context
-{
-  #ifdef linux
+  struct Context
+  {
+    #ifdef linux
 
-  #endif
-  #ifdef WIN32
-    OVERLAPPED      ol;
-  #endif
-    EIOTYPE         type;
-    void          * k;
-    const uint8_t * b;
-    unsigned long   n;
-    bool            bFree;
-};
+    #endif
+    #ifdef WIN32
+      OVERLAPPED      ol;
+    #endif
+      EIOTYPE         type;
+      void          * k;
+      const uint8_t * b;
+      unsigned long   n;
+      bool            bFree;
+  };
 
-constexpr uint32_t DEVICE_BUFFER_SIZE = 256;
+  constexpr uint32_t DEVICE_BUFFER_SIZE = 256;
 
-class CDevice : public CSubject<uint8_t, uint8_t>
-{
-  public:
+  class CDevice : public CSubject<uint8_t, uint8_t>
+  {
+    public:
 
     FD iFD;
 
@@ -301,35 +301,34 @@ class CDevice : public CSubject<uint8_t, uint8_t>
       return -1;
     }
 
-  protected:
+    protected:
 
     EDeviceType iDevicetype = EDeviceType::EDevNone;
-};
+  };
 
-const char EIOToChar(EIOTYPE t)
-{
-  switch(t)
+  const char EIOToChar(EIOTYPE t)
   {
-    case EIOTYPE::ACCEPT:
-     return 'A';
-     break;
-    case EIOTYPE::CONNECT:
-     return 'C';
-     break;
-    case EIOTYPE::READ:
-     return 'R';    
-     break;
-    case EIOTYPE::WRITE:
-     return 'W';
-     break;
-    default:
-     return 'Z';
+    switch(t)
+    {
+      case EIOTYPE::ACCEPT:
+        return 'A';
+        break;
+      case EIOTYPE::CONNECT:
+        return 'C';
+        break;
+      case EIOTYPE::READ:
+        return 'R';    
+        break;
+      case EIOTYPE::WRITE:
+        return 'W';
+        break;
+      default:
+        return 'Z';
+    }
   }
+
+  using SPCDevice = std::shared_ptr<CDevice>;
+  using WPCDevice = std::weak_ptr<CDevice>;
 }
-
-using SPCDevice = std::shared_ptr<CDevice>;
-using WPCDevice = std::weak_ptr<CDevice>;
-
-NS_END
 
 #endif //DEVICE_HPP
