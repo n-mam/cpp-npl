@@ -56,12 +56,17 @@ namespace NPL
 
     FD iFDsync;
 
+    protected:
+
+    EDeviceType iDevicetype = EDeviceType::EDevNone;
+
+    public:
+
     CDevice() = default;
 
+    #ifdef linux
     CDevice(const std::string& aFilename, bool bCreateNew)
     {
-      #ifdef linux
-
       int flags = 0|O_RDWR ;
 
       if (bCreateNew)
@@ -80,10 +85,13 @@ namespace NPL
         std::cout << "CDevice() " << aFilename << ", Error : " << strerror(errno) << "\n";
       }
 
-      #endif
+      iDevicetype = EDeviceType::EDevFile;
+    }
+    #endif
 
-      #ifdef WIN32
-
+    #ifdef WIN32
+    CDevice(const std::string& aFilename, bool bCreateNew)
+    {
       iConnected = true;
 
       iFD = CreateFileA(
@@ -116,10 +124,46 @@ namespace NPL
         std::cout << "CDevice() " << aFilename << ", sync handle Error : " << GetLastError() << "\n";
       }
 
-      #endif 
+      iDevicetype = EDeviceType::EDevFile;
+    }
+
+    CDevice(const std::wstring& aFilename, bool bCreateNew)
+    {
+      iConnected = true;
+
+      iFD = CreateFileW(
+        aFilename.c_str(),
+        GENERIC_READ|GENERIC_WRITE,
+        FILE_SHARE_READ|FILE_SHARE_WRITE,
+        NULL,
+        (bCreateNew ? CREATE_ALWAYS : OPEN_EXISTING),
+        FILE_FLAG_OVERLAPPED|FILE_FLAG_SEQUENTIAL_SCAN,
+        NULL);
+
+      if (iFD == INVALID_HANDLE_VALUE)
+      {
+        iConnected = false;
+        std::wcout << L"CDevice() " << aFilename << L", Error : " << GetLastError() << L"\n";
+      }
+
+      iFDsync = CreateFileW(
+              aFilename.c_str(),
+              GENERIC_READ|GENERIC_WRITE,
+              FILE_SHARE_READ|FILE_SHARE_WRITE,
+              NULL,
+              OPEN_EXISTING,
+              FILE_ATTRIBUTE_NORMAL,
+              NULL);
+
+      if (iFDsync == INVALID_HANDLE_VALUE)
+      {
+        iConnected = false;
+        std::wcout << L"CDevice() " << aFilename << L", sync handle Error : " << GetLastError() << L"\n";
+      }
 
       iDevicetype = EDeviceType::EDevFile;
     }
+    #endif
 
     virtual ~CDevice()
     {
@@ -128,7 +172,7 @@ namespace NPL
         CloseHandle(iFD);
         CloseHandle(iFDsync);
       }
-    };
+    }
 
     virtual EDeviceType GetDeviceType(void)
     {
@@ -300,10 +344,6 @@ namespace NPL
 
       return -1;
     }
-
-    protected:
-
-    EDeviceType iDevicetype = EDeviceType::EDevNone;
   };
 
   const char EIOToChar(EIOTYPE t)
