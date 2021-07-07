@@ -71,7 +71,8 @@ namespace NPL
     return http;
   }
 
-  auto make_file(const std::string& file, bool bCreate = false)
+  template <typename T>
+  auto make_file(const T& file, bool bCreate = false)
   {
     auto device = std::make_shared<CDevice>(file, bCreate);
 
