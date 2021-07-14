@@ -19,9 +19,7 @@ namespace NPL
   {
     public:
 
-    CFTPMessage(const std::vector<uint8_t>& m) : CMessage(m)
-    {
-    }  
+    CFTPMessage(const std::vector<uint8_t>& m) : CMessage(m) {}
   };
 
   enum class DCProt : uint8_t
@@ -243,12 +241,7 @@ namespace NPL
       auto l = msg->GetPayloadLength();
       auto b = msg->GetPayloadBuffer();
 
-      for (size_t i = 0; i < l; i++)
-      {
-        std::cout << b[i];
-      }
-
-      std::cout << "\n";
+      LOG << std::string(b, l);
 
       for (int i = 0; i < sizeof(FSM) / sizeof(FSM[0]); i++)
       {
@@ -296,7 +289,7 @@ namespace NPL
     virtual void SendCommand(const std::string& c, const std::string& arg = "")
     {
       auto cmd = c + " " + arg + "\r\n";
-      std::cout << cmd;
+      LOG << cmd;
       Write((uint8_t *)cmd.c_str(), cmd.size(), 0);
     }
 
@@ -404,7 +397,7 @@ namespace NPL
 
       if (fRet < 6)
       {
-        std::cout << "Faled to parse PASV response\n";
+        LOG << "Faled to parse PASV response";
       }
 
       auto host = std::to_string(h1) + "." +
