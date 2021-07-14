@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
 {
   if (argc != 3)
   {
-    std::cout << "usage : Agent <host> <port>\n";
-    std::cout << "usage : Agent 0.0.0.0 8081\n";
+    LOG << "usage : Agent <host> <port>\n";
+    LOG << "usage : Agent 0.0.0.0 8081\n";
     return 0;
   }
 

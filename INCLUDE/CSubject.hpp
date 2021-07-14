@@ -22,7 +22,7 @@ namespace NPL
 
     using SPCSubject = std::shared_ptr<CSubject<T1, T2>>;
     using WPCSubject = std::weak_ptr<CSubject<T1, T2>>;
-    
+
     std::mutex iLock;
 
     WPCSubject iTarget;

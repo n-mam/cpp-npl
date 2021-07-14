@@ -1,6 +1,7 @@
 #ifndef NPL_HPP
 #define NPL_HPP
 
+#include <CLogger.hpp>
 #include <CDispatcher.hpp>
 #include <CDeviceSocket.hpp>
 #include <CProtocolFTP.hpp>
